@@ -100,7 +100,22 @@ setAstChildren ast newChildren =
             ast
 
 
-mutateNthChild : Int -> (AST -> List AST) -> AST -> AST
+compactListOfMaybe : List (Maybe a) -> List a
+compactListOfMaybe list =
+    List.foldr
+        (\x acc ->
+            case x of
+                Just y ->
+                    y :: acc
+
+                Nothing ->
+                    acc
+        )
+        []
+        list
+
+
+mutateNthChild : Int -> (Maybe AST -> List (Maybe AST)) -> AST -> AST
 mutateNthChild index mutator ast =
     let
         currentChildren =
@@ -109,26 +124,24 @@ mutateNthChild index mutator ast =
         indexedMutator =
             \hereIndex child ->
                 if hereIndex == index then
-                    mutator child
+                    compactListOfMaybe (mutator child)
 
                 else
-                    [ child ]
+                    compactListOfMaybe [ child ]
 
         mutList =
             if index == List.length currentChildren then
                 currentChildren
-                    ++ indexedMutator index
-                        -- TODO: this is a hack
-                        (Number { value = 66666 })
+                    ++ indexedMutator index Nothing
 
             else
-                List.indexedMap indexedMutator currentChildren
+                List.indexedMap indexedMutator (List.map Maybe.Just currentChildren)
                     |> List.foldr (++) []
     in
     setAstChildren ast mutList
 
 
-mutateTargetChild : Path -> (AST -> List AST) -> AST -> AST
+mutateTargetChild : Path -> (Maybe AST -> List (Maybe AST)) -> AST -> AST
 mutateTargetChild path transformer ast =
     case path of
         [] ->
@@ -139,20 +152,45 @@ mutateTargetChild path transformer ast =
 
         midIndex :: rest ->
             mutateNthChild midIndex
-                (\a -> [ mutateTargetChild rest transformer a ])
+                (\maybeA -> [ Maybe.map (mutateTargetChild rest transformer) maybeA ])
                 ast
+
+
+applyAstMutation : Model -> Model
+applyAstMutation model =
+    case model.replacing of
+        Nothing ->
+            model
+
+        Just replacement ->
+            let
+                newAst =
+                    mutateTargetChild replacement.path
+                        (\a ->
+                            if replacement.addition then
+                                [ Just (Number { value = 9999999999 }), a ]
+
+                            else
+                                [ Just (Number { value = 9999999999 }) ]
+                        )
+                        model.program
+            in
+            { model | program = newAst, replacing = Nothing }
+
+
+makeReplacement : Path -> Bool -> String -> Replacement
+makeReplacement path addition search =
+    Just { path = path, search = search, addition = addition }
 
 
 update : Msg -> Model -> Model
 update msg model =
     case msg of
         InitiateAdd path search ->
-            { model | replacing = Just { path = path, search = search, addition = True } }
+            { model | replacing = makeReplacement path True search }
 
         InitiateReplace path search ->
-            { model
-                | replacing = Just { path = path, search = search, addition = False }
-            }
+            { model | replacing = makeReplacement path False search }
 
 
 
@@ -187,7 +225,8 @@ mapWithAddButtons ctx renderer astList =
                     [ addButton ctx.path index ]
                         ++ [ renderer index astChild ]
 
-        listLength = List.length astList
+        listLength =
+            List.length astList
 
         renderWithLastAddButton =
             \index astChild ->
@@ -196,19 +235,19 @@ mapWithAddButtons ctx renderer astList =
                         index == listLength - 1
                 in
                 if isLast then
-                    (renderWithButton index astChild)
-                        ++ (
-                            if ctxAddingPath ctx == Just (ctx.path ++ [ listLength ]) then
+                    renderWithButton index astChild
+                        ++ (if ctxAddingPath ctx == Just (ctx.path ++ [ listLength ]) then
                                 [ text "adding UwU" ]
+
                             else
                                 [ addButton ctx.path listLength ]
-                        )
+                           )
 
                 else
                     renderWithButton index astChild
     in
     List.indexedMap renderWithLastAddButton astList
-        |> List.foldr (++) [  ]
+        |> List.foldr (++) []
 
 
 wrapBeingReplaced : IterationContext -> Html Msg -> Html Msg
@@ -282,9 +321,17 @@ renderReplaceUi { replacing } =
         Nothing ->
             []
 
-        Just { path, search } ->
+        Just { path, search, addition } ->
+            let
+                replaceText =
+                    if addition then
+                        "Add"
+
+                    else
+                        "Replace"
+            in
             [ div [ class "ast-replace-ui" ]
-                [ text "Replace"
+                [ text replaceText
                 , div [ class "ast-replace-path" ]
                     [ text (String.join "." (List.map String.fromInt path)) ]
                 , div [ class "ast-replace-search" ]
