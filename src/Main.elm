@@ -1,8 +1,8 @@
 module Main exposing (main)
 
-import Array exposing (Array)
+import AST exposing (..)
 import Browser
-import Html exposing (Attribute, Html, button, div, input, node, span, text)
+import Html exposing (Html, button, div, input, node, span, text)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput)
 import IterationContext exposing (..)
@@ -19,12 +19,6 @@ main =
 
 
 -- MODEL
-
-
-type AST
-    = Program { expressions : List AST }
-    | Form { head : String, tail : List AST }
-    | Number { value : Int }
 
 
 type alias Model =
@@ -55,7 +49,6 @@ init =
                             , tail =
                                 [ Number { value = 1 }
                                 , Number { value = 2 }
-                                , Number { value = 3 }
                                 ]
                             }
                         , Number { value = 3 }
@@ -65,7 +58,7 @@ init =
             }
     , replacing =
         Just
-            { path = [ 0, 2 ]
+            { path = [ 2 ]
             , search = ""
             , addition = True
             }
@@ -76,113 +69,31 @@ init =
 -- UPDATE
 
 
+applyAstMutation : Model -> Model
+applyAstMutation model =
+    let
+        applier =
+            \replacement ->
+                mutateTargetChild replacement.path
+                    (if replacement.addition then
+                        Insert (Number { value = 9999999999 })
+
+                     else
+                        ReplaceWith (Number { value = 9999999999 })
+                    )
+                    model.program
+
+        newProgram =
+            model.replacing
+                |> Maybe.map applier
+                |> Maybe.withDefault model.program
+    in
+    { model | program = newProgram, replacing = Nothing }
+
+
 type Msg
     = InitiateAdd Path String
     | InitiateReplace Path String
-
-
-getAstChildren : AST -> List AST
-getAstChildren ast =
-    case ast of
-        Program p ->
-            p.expressions
-
-        Form f ->
-            f.tail
-
-        _ ->
-            []
-
-
-setAstChildren : AST -> List AST -> AST
-setAstChildren ast newChildren =
-    case ast of
-        Program p ->
-            Program { p | expressions = newChildren }
-
-        Form f ->
-            Form { f | tail = newChildren }
-
-        _ ->
-            ast
-
-
-compactListOfMaybe : List (Maybe a) -> List a
-compactListOfMaybe list =
-    List.foldr
-        (\x acc ->
-            case x of
-                Just y ->
-                    y :: acc
-
-                Nothing ->
-                    acc
-        )
-        []
-        list
-
-
-mutateNthChild : Int -> (Maybe AST -> List (Maybe AST)) -> AST -> AST
-mutateNthChild index mutator ast =
-    let
-        currentChildren =
-            getAstChildren ast
-
-        indexedMutator =
-            \hereIndex child ->
-                if hereIndex == index then
-                    compactListOfMaybe (mutator child)
-
-                else
-                    compactListOfMaybe [ child ]
-
-        mutList =
-            if index == List.length currentChildren then
-                currentChildren
-                    ++ indexedMutator index Nothing
-
-            else
-                List.indexedMap indexedMutator (List.map Maybe.Just currentChildren)
-                    |> List.foldr (++) []
-    in
-    setAstChildren ast mutList
-
-
-mutateTargetChild : Path -> (Maybe AST -> List (Maybe AST)) -> AST -> AST
-mutateTargetChild path transformer ast =
-    case path of
-        [] ->
-            ast
-
-        [ hereIndex ] ->
-            mutateNthChild hereIndex transformer ast
-
-        midIndex :: rest ->
-            mutateNthChild midIndex
-                (\maybeA -> [ Maybe.map (mutateTargetChild rest transformer) maybeA ])
-                ast
-
-
-applyAstMutation : Model -> Model
-applyAstMutation model =
-    case model.replacing of
-        Nothing ->
-            model
-
-        Just replacement ->
-            let
-                newAst =
-                    mutateTargetChild replacement.path
-                        (\a ->
-                            if replacement.addition then
-                                [ Just (Number { value = 9999999999 }), a ]
-
-                            else
-                                [ Just (Number { value = 9999999999 }) ]
-                        )
-                        model.program
-            in
-            { model | program = newAst, replacing = Nothing }
 
 
 makeReplacement : Path -> Bool -> String -> Replacement
@@ -204,6 +115,7 @@ update msg model =
 -- VIEW
 
 
+addingPlaceholder : Html msg
 addingPlaceholder =
     div [ class "ast-replaceable ast-replaceable--being-replaced" ] [ text "..." ]
 
