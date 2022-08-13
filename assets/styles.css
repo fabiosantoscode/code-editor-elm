@@ -1,0 +1,30 @@
+.ast-program {
+    background-color: #f5f5f5;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    font-family: monospace;
+    font-size: 2rem;
+}
+
+.ast-form-parens {
+    display: flex;
+}
+
+.ast-form-parens > * + * {
+    margin-left: 0.5ch;
+}
+
+.ast-add {
+    color: #00a650;
+}
+
+.ast-replaceable-button {
+    border: 0 none;
+    background: transparent
+}
+
+.ast-replaceable--being-replaced {
+    color: #3384da;
+    box-shadow: 0 0 0 4px #3384da;
+}
