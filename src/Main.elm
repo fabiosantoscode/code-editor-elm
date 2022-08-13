@@ -39,7 +39,7 @@ init =
         Program
             { expressions =
                 [ Form
-                    { head = "+"
+                    { head = "func"
                     , tail =
                         [ Number { value = 1 }
                         , Number { value = 2 }
@@ -47,10 +47,17 @@ init =
                         ]
                     }
                 , Form
-                    { head = "+"
+                    { head = "func"
                     , tail =
-                        [ Number { value = 1 }
-                        , Number { value = 2 }
+                        [ Number { value = 2 }
+                        , Form
+                            { head = "func"
+                            , tail =
+                                [ Number { value = 1 }
+                                , Number { value = 2 }
+                                , Number { value = 3 }
+                                ]
+                            }
                         , Number { value = 3 }
                         ]
                     }
@@ -197,72 +204,36 @@ update msg model =
 -- VIEW
 
 
-renderPunctuation : String -> Html Msg
-renderPunctuation symbol =
-    span [ class "ast-punctuation" ] [ text symbol ]
-
-
-renderFormParens : List (Html Msg) -> Html Msg
-renderFormParens inner =
-    div [ class "ast-form-parens" ]
-        (renderPunctuation "(" :: inner ++ [ renderPunctuation ")" ])
+addingPlaceholder =
+    div [ class "ast-replaceable ast-replaceable--being-replaced" ] [ text "..." ]
 
 
 mapWithAddButtons : IterationContext -> (Int -> AST -> Html Msg) -> List AST -> List (Html Msg)
 mapWithAddButtons ctx renderer astList =
     let
+        conditonalAddButton =
+            \index ->
+                if ctxAddingPath ctx == Just (ctx.path ++ [ index ]) then
+                    addingPlaceholder
+
+                else
+                    addButton ctx.path index
+
         renderWithButton =
             \index astChild ->
-                if ctxReplacingPath ctx == Just (ctx.path ++ [ index ]) then
-                    [ addButton ctx.path index ]
-                        ++ [ text "replace me UwU" ]
+                [ conditonalAddButton index, renderer index astChild ]
 
-                else if ctxAddingPath ctx == Just (ctx.path ++ [ index ]) then
-                    [ text "adding UwU" ]
-                        ++ [ renderer index astChild ]
-
-                else
-                    [ addButton ctx.path index ]
-                        ++ [ renderer index astChild ]
-
-        listLength =
-            List.length astList
-
-        renderWithLastAddButton =
-            \index astChild ->
-                let
-                    isLast =
-                        index == listLength - 1
-                in
-                if isLast then
-                    renderWithButton index astChild
-                        ++ (if ctxAddingPath ctx == Just (ctx.path ++ [ listLength ]) then
-                                [ text "adding UwU" ]
-
-                            else
-                                [ addButton ctx.path listLength ]
-                           )
-
-                else
-                    renderWithButton index astChild
+        mapped =
+            List.indexedMap renderWithButton astList
+                |> List.foldr (++) []
     in
-    List.indexedMap renderWithLastAddButton astList
-        |> List.foldr (++) []
+    mapped ++ [ conditonalAddButton (List.length astList) ]
 
 
-wrapBeingReplaced : IterationContext -> Html Msg -> Html Msg
-wrapBeingReplaced ctx ast =
-    if ctxReplacingPath ctx == Just ctx.path then
-        div [ class "ast-replaceable ast-replaceable--being-replaced" ] [ ast ]
-
-    else
-        div [ class "ast-replaceable" ] [ ast ]
-
-
-replaceButton : Path -> Html Msg -> Html Msg
-replaceButton path astHtml =
+replaceButton : Path -> String -> Html Msg -> Html Msg
+replaceButton path className astHtml =
     button
-        [ class "ast-replaceable-button"
+        [ class ("ast-replace-button " ++ className)
         , onClick (InitiateReplace path "")
         ]
         [ astHtml ]
@@ -277,42 +248,83 @@ addButton path index =
         [ text "+" ]
 
 
+
+--- Rendering AST nodes
+
+
+renderPunctuation : String -> Html Msg
+renderPunctuation symbol =
+    span [ class "ast-punctuation" ] [ text symbol ]
+
+
+renderForm : List (Html Msg) -> List (Html Msg)
+renderForm inner =
+    renderPunctuation "(" :: inner ++ [ renderPunctuation ")" ]
+
+
+beingReplacedClasses : IterationContext -> List String
+beingReplacedClasses ctx =
+    if ctxReplacingPath ctx == Just ctx.path then
+        [ "ast-replaceable", "ast-replaceable--being-replaced" ]
+
+    else
+        [ "ast-replaceable" ]
+
+
+layoutClasses : AST -> List String
+layoutClasses ast =
+    case ast of
+        Program _ ->
+            [ "layout-vertical" ]
+
+        Form _ ->
+            [ "layout-horizontal" ]
+
+        _ ->
+            []
+
+
 renderAst : IterationContext -> AST -> Html Msg
 renderAst ctx ast =
     let
+        classListFor =
+            case ast of
+                Program _ ->
+                    [ "ast-program" ]
+
+                Form _ ->
+                    [ "ast-form" ]
+
+                Number _ ->
+                    [ "ast-number" ]
+
+        className =
+            "ast"
+                :: classListFor
+                ++ beingReplacedClasses ctx
+                ++ layoutClasses ast
+                |> String.join " "
+
         recurse =
             \i -> renderAst (ctxAppendPath ctx i)
 
         recurseChildren =
             mapWithAddButtons ctx recurse
-
-        replaceWrap =
-            wrapBeingReplaced ctx
-
-        asReplaceButton =
-            replaceButton ctx.path
-
-        plainHtml =
-            case ast of
-                Program { expressions } ->
-                    div [ class "ast-program" ]
-                        (recurseChildren expressions)
-
-                Form { head, tail } ->
-                    replaceWrap
-                        (div [ class "ast-form" ]
-                            [ renderFormParens
-                                (asReplaceButton
-                                    (renderPunctuation head)
-                                    :: recurseChildren tail
-                                )
-                            ]
-                        )
-
-                Number { value } ->
-                    replaceWrap (asReplaceButton (div [] [ text (String.fromInt value) ]))
     in
-    plainHtml
+    case ast of
+        Program { expressions } ->
+            div [ class className ] (recurseChildren expressions)
+
+        Form { head, tail } ->
+            div [ class className ]
+                (renderForm
+                    (replaceButton ctx.path "" (renderPunctuation head)
+                        :: recurseChildren tail
+                    )
+                )
+
+        Number { value } ->
+            replaceButton ctx.path className (text (String.fromInt value))
 
 
 renderReplaceUi : Model -> List (Html Msg)
