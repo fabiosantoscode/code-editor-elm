@@ -1,31 +1,84 @@
 .ast-program {
-    background-color: #f5f5f5;
+    background-color: #f3eeec;
     border-radius: 0.25rem;
     padding: 1rem;
     margin-bottom: 1rem;
     font-family: monospace;
     font-size: 2rem;
+    line-height: 1;
 
     --color-regular: #111;
-    --color-highlight: #3384da;
+    --color-highlight: #111;
+    --color-remove: #da6e2f;
+    --color-add: #e99a6c;
 }
 
-.ast-add {
-    color: #00a650;
-}
-
-.ast-replace-button {
+button {
+    font-size: 1em;
+    color: inherit;
+    background: transparent;
     border: 0 none;
-    background: transparent
+    padding: 0;
+    vertical-align: middle;
+}
+
+.ast-add-button, .ast-add-target {
+    align-self: stretch;
+    display: flex;
+    position: relative;
+    padding: 0.4em;
+    transition: all 200ms ease;
+}
+
+.ast-add-button > span, .ast-add-target > span {
+    position: absolute;
+    inset: 0.4em;
+    background-color: transparent;
+    transition: all 80ms ease;
+}
+
+.ast-add-button:hover > span {
+    inset: 0.3em;
+    background-color: var(--color-highlight);
+}
+
+.layout-horizontal > .ast-add-button,
+.layout-horizontal > .ast-add-target {
+    width: 0.3em;
+    margin-top: -0.3em;
+    margin-bottom: -0.3em;
+}
+
+.layout-vertical > .ast-add-button,
+.layout-vertical > .ast-add-target {
+    height: 0.3em;
+    margin-left: -0.3em;
+    margin-right: -0.3em;
+}
+
+
+/* add-button becomes add-target */
+
+.ast-add-target {
+    color: var(--color-add);
+    --var-color-regular: var(--color-add);
+}
+.ast-add-target > span {
+    background-color: var(--color-add);
+    inset: 0.3em;
+}
+.layout-horizontal > .ast-add-target {
+    margin-left: 0.25em;
+    margin-right: 0.25em;
+}
+.layout-vertical > .ast-add-target {
+    margin-top: 0.25em;
+    margin-bottom: 0.25em;
 }
 
 .ast-replaceable--being-replaced {
-    color: var(--color-highlight);
-    box-shadow: 0 0 0 4px var(--color-highlight);
-}
-
-.ast-replaceable--being-replaced > .ast {
-    color: var(--color-regular)
+    color: var(--color-remove);
+    --var-color-regular: var(--color-remove);
 }
 
 .layout-horizontal {
@@ -33,15 +86,11 @@
     align-items: center;
 }
 
-.layout-vertical > .layout-horizontal {
+.layout-vertical {
     display: flex;
-    align-items: center;
-}
-
-.layout-horizontal > * + * {
-    margin-left: 0.5ch;
+    flex-direction: column;
 }
 
 .layout-vertical > * + * {
-    display: block;
+    margin-top: 0;
 }

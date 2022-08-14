@@ -1,4 +1,4 @@
-module StandardLibrary exposing (..)
+module Machine.StandardLibrary exposing (..)
 
 
 type alias StandardLibraryFunction =

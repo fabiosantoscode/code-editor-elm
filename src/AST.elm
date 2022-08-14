@@ -1,7 +1,5 @@
 module AST exposing (..)
 
-import IterationContext exposing (Path)
-
 
 type AST
     = Program { expressions : List AST }
@@ -12,6 +10,21 @@ type AST
 type ASTTransformation
     = Insert AST
     | ReplaceWith AST
+
+
+type alias IterationContext =
+    { path : Path
+    , replacing : Replacement
+    }
+
+
+type alias Path =
+    List Int
+
+
+type alias Replacement =
+    Maybe { path : Path, search : String, addition : Bool }
+
 
 
 getTransAddedNode : ASTTransformation -> AST
@@ -112,7 +125,7 @@ mutateNthChild index trans ast =
     setAstChildren ast mutList
 
 
-mutateTargetChild : Path -> ASTTransformation -> AST -> AST
+mutateTargetChild : (List Int) -> ASTTransformation -> AST -> AST
 mutateTargetChild path transformer ast =
     case path of
         [] ->
