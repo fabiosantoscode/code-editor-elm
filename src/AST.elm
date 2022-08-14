@@ -70,20 +70,6 @@ mutAstChildren mutator ast =
         |> setAstChildren ast
 
 
-compactListOfMaybe : List (Maybe a) -> List a
-compactListOfMaybe list =
-    List.foldr
-        (\x acc ->
-            case x of
-                Just y ->
-                    y :: acc
-
-                Nothing ->
-                    acc
-        )
-        []
-        list
-
 
 makeMutator : ASTTransformation -> (Maybe AST -> List (Maybe AST))
 makeMutator transformation maybeExisting =

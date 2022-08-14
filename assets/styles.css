@@ -16,6 +16,7 @@
 }
 
 .ast-button {
+    text-align: inherit;
     font-size: 1em;
     color: inherit;
     background: transparent;

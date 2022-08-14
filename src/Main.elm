@@ -57,7 +57,7 @@ renderModel : Model -> Html Msg
 renderModel model =
     div []
         ([ node "link" [ rel "stylesheet", href "/assets/styles.css" ] []
-         , renderAst
+         , renderEditor
             { path = [], replacing = model.replacing }
             model.program
          ]

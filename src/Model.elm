@@ -50,20 +50,21 @@ initialModel =
 type Msg
     = InitiateAdd Path String
     | InitiateReplace Path String
+    | CommitChange AST
     | Noop
 
 
-applyAstMutation : Model -> Model
-applyAstMutation model =
+applyAstMutation : Model -> AST -> Model
+applyAstMutation model ast =
     let
         applier =
             \replacement ->
                 mutateTargetChild replacement.path
                     (if replacement.addition then
-                        Insert (Number { value = 9999999999 })
+                        Insert ast
 
                      else
-                        ReplaceWith (Number { value = 9999999999 })
+                        ReplaceWith ast
                     )
                     model.program
 
@@ -91,6 +92,9 @@ applyMsg msg model =
 
         InitiateReplace path search ->
             { model | replacing = makeReplacement path False search }
+
+        CommitChange newAst ->
+            applyAstMutation model newAst
 
 
 ctxEnterPath : IterationContext -> Int -> IterationContext
