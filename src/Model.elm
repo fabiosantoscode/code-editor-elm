@@ -6,37 +6,42 @@ import AST exposing (..)
 type alias Model =
     { program : AST
     , replacing : Replacement
-    , varNames : List String
     }
 
 
 initialModel : Model
 initialModel =
     { program =
-        Program
-            { expressions =
-                [ Form
-                    { head = "func"
-                    , tail =
-                        [ Number { value = 1 }
-                        , Number { value = 2 }
-                        , Number { value = 3 }
-                        ]
-                    }
-                , Form
-                    { head = "func"
-                    , tail =
-                        [ Number { value = 2 }
-                        , Form
+        Block
+            { assignments =
+                [ { name = "form1"
+                  , expression =
+                        Form
                             { head = "func"
                             , tail =
                                 [ Number { value = 1 }
                                 , Number { value = 2 }
+                                , Number { value = 3 }
                                 ]
                             }
-                        , Number { value = 3 }
-                        ]
-                    }
+                  }
+                , { name = "form2"
+                  , expression =
+                        Form
+                            { head = "func"
+                            , tail =
+                                [ Number { value = 2 }
+                                , Form
+                                    { head = "func"
+                                    , tail =
+                                        [ Number { value = 1 }
+                                        , Number { value = 2 }
+                                        ]
+                                    }
+                                , Number { value = 3 }
+                                ]
+                            }
+                  }
                 ]
             }
     , replacing =
@@ -45,7 +50,6 @@ initialModel =
             , search = ""
             , addition = True
             }
-    , varNames = [ "form", "func" ]
     }
 
 
@@ -72,11 +76,8 @@ applyAstMutation model ast =
                     mutateTargetChild replacement.path
                         transformation
                         model.program
-
-                mutatedVarNames =
-                    getNewVarNames replacement.path model.varNames transformation
             in
-            { program = mutatedProgram, varNames = mutatedVarNames, replacing = Nothing }
+            { program = mutatedProgram, replacing = Nothing }
 
         Nothing ->
             model

@@ -35,27 +35,23 @@ addButton ctx =
     button attributes [ span [] [] ]
 
 
-varNameIsClickable : Model -> IterationContext -> String -> Bool
-varNameIsClickable model ctx varName =
+varNameIsClickable : Model -> List String -> IterationContext -> String -> Bool
+varNameIsClickable model varNames ctx varName =
     case model.replacing of
         Nothing ->
             False
 
         Just r ->
-            isVariableAvailable model.varNames r.path varName
+            isVariableAvailable varNames r.path varName
 
 
-
--- TODO: Only clickable if ctx.path is after its definition
-
-
-renderClickableVarName : Model -> IterationContext -> String -> Html Msg
-renderClickableVarName model ctx varName =
+renderClickableVarName : Model -> List String -> IterationContext -> String -> Html Msg
+renderClickableVarName model varNames ctx varName =
     let
         attributes =
-            if varNameIsClickable model ctx varName then
+            if varNameIsClickable model varNames ctx varName then
                 [ class "ast-button ast-var-name ast-var-name--clickable"
-                , onClick (CommitChange (Reference {name = varName}))
+                , onClick (CommitChange (Reference { name = varName }))
                 ]
 
             else
@@ -126,7 +122,7 @@ renderEditor model ctx ast =
     let
         classListFor =
             case ast of
-                Program _ ->
+                Block _ ->
                     [ "ast-program", "layout-vertical" ]
 
                 Form _ ->
@@ -147,12 +143,18 @@ renderEditor model ctx ast =
             renderEditor model
     in
     case ast of
-        Program { expressions } ->
+        Block p ->
             let
+                varNames =
+                    p.assignments |> List.map (\a -> a.name)
+
                 renderWithVarName =
                     \childCtx childAst ->
-                        renderClickableVarName model childCtx (getNthVarName model.varNames childCtx.path)
+                        renderClickableVarName model varNames childCtx (getNthVarName varNames childCtx.path)
                             :: childRender childCtx childAst
+
+                expressions =
+                    getAstChildren ast
             in
             [ div [ class className ] (mapWithAddButtons renderWithVarName ctx expressions) ]
 

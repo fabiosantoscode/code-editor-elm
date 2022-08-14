@@ -62,6 +62,8 @@
     margin-right: -0.3em;
 }
 
+/* add button */
+
 .ast-add-button > span {
     position: absolute;
     inset: 0.4em;
@@ -74,9 +76,6 @@
     background-color: var(--color-highlight);
 }
 
-
-/* add-button becomes active */
-
 .ast-add-button--adding {
     color: var(--color-add);
     --var-color-regular: var(--color-add);
@@ -85,6 +84,7 @@
     background-color: var(--color-add);
     inset: 0.3em;
 }
+
 .layout-horizontal > .ast-add-button--adding {
     margin-left: 0.25em;
     margin-right: 0.25em;
@@ -94,22 +94,22 @@
     margin-bottom: 0.25em;
 }
 
+/* layout */
+
 .ast-replaceable--being-replaced {
     color: var(--color-remove);
     --var-color-regular: var(--color-remove);
 }
 
 /* variable names */
-.ast-var-name {
-    color: var(--color-var-name);
-}
-
 .ast-var-name--clickable {
     color: var(--color-var-name--clickable);
     text-decoration: underline;
     font-weight: medium;
+    cursor: pointer;
 }
 
-.ast-reference {
+/* atomic */
+.color-var-name {
     color: var(--color-var-name);
 }

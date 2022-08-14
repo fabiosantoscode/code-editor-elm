@@ -1,8 +1,14 @@
 module AST exposing (..)
 
+import Html exposing (a)
+
+
+type alias Assign =
+    { name : String, expression : AST }
+
 
 type AST
-    = Program { expressions : List AST }
+    = Block { assignments : List Assign }
     | Form { head : String, tail : List AST }
     | Number { value : Int }
     | Reference { name : String }
@@ -40,8 +46,8 @@ getTransAddedNode trans =
 getAstChildren : AST -> List AST
 getAstChildren ast =
     case ast of
-        Program p ->
-            p.expressions
+        Block p ->
+            p.assignments |> List.map (\a -> a.expression)
 
         Form f ->
             f.tail
@@ -53,8 +59,8 @@ getAstChildren ast =
 setAstChildren : AST -> List AST -> AST
 setAstChildren ast newChildren =
     case ast of
-        Program p ->
-            Program { p | expressions = newChildren }
+        Block p ->
+            Block { p | assignments = newChildren |> List.map (\c -> { name = "", expression = c }) }
 
         Form f ->
             Form { f | tail = newChildren }
@@ -63,11 +69,66 @@ setAstChildren ast newChildren =
             ast
 
 
-mutAstChildren : (List AST -> List AST) -> AST -> AST
+type MutASTChildrenRet
+    = ReplaceWithChild AST
+    | PrependOneChild AST
+
+
+flatMap : (Int -> a -> List b) -> List a -> List b
+flatMap f xs =
+    xs |> List.indexedMap f |> List.foldr (++) []
+
+
+mutAstChildren : (Int -> AST -> MutASTChildrenRet) -> AST -> AST
 mutAstChildren mutator ast =
-    getAstChildren ast
-        |> mutator
-        |> setAstChildren ast
+    case ast of
+        Block p ->
+            Block
+                { p
+                    | assignments =
+                        p.assignments
+                            |> flatMap
+                                (\index a ->
+                                    case mutator index a.expression of
+                                        ReplaceWithChild newChild ->
+                                            [ { a | expression = newChild } ]
+
+                                        PrependOneChild newChild ->
+                                            [ { name = "", expression = newChild }, a ]
+                                )
+                }
+
+        Form f ->
+            Form
+                { f
+                    | tail =
+                        f.tail
+                            |> flatMap
+                                (\index a ->
+                                    case mutator index a of
+                                        ReplaceWithChild newChild ->
+                                            [ newChild ]
+
+                                        PrependOneChild newChild ->
+                                            [ newChild, a ]
+                                )
+                }
+
+        _ ->
+            ast
+
+
+addAstChild : AST -> AST -> AST
+addAstChild ast newChild =
+    case ast of
+        Block p ->
+            Block { p | assignments = p.assignments ++ [ { name = "", expression = newChild } ] }
+
+        Form f ->
+            Form { f | tail = f.tail ++ [ newChild ] }
+
+        _ ->
+            ast
 
 
 makeMutator : ASTTransformation -> (Maybe AST -> List (Maybe AST))
@@ -80,7 +141,7 @@ makeMutator transformation maybeExisting =
             [ Just newNode ]
 
 
-mutateNthChild : Int -> ASTTransformation -> AST -> AST
+mutateNthChild : Int -> ASTTransformation -> AST -> MutASTChildrenRet
 mutateNthChild index trans ast =
     let
         currentChildren =
@@ -91,46 +152,52 @@ mutateNthChild index trans ast =
                 if hereIndex == index then
                     case trans of
                         Insert newNode ->
-                            [ newNode, child ]
+                            PrependOneChild newNode
 
                         ReplaceWith newNode ->
-                            [ newNode ]
+                            ReplaceWithChild newNode
 
                 else
-                    [ child ]
-
-        mutList =
-            if index == List.length currentChildren then
-                currentChildren ++ [ getTransAddedNode trans ]
-
-            else
-                List.indexedMap indexedMutator currentChildren
-                    |> List.foldr (++) []
+                    ReplaceWithChild child
     in
-    setAstChildren ast mutList
+    if index == List.length currentChildren then
+        ReplaceWithChild (addAstChild ast (getTransAddedNode trans))
+
+    else
+        ReplaceWithChild (mutAstChildren indexedMutator ast)
 
 
-mutateTargetChild : List Int -> ASTTransformation -> AST -> AST
-mutateTargetChild path transformer ast =
+mutateTargetChild1 : List Int -> ASTTransformation -> AST -> MutASTChildrenRet
+mutateTargetChild1 path transformer ast =
     case path of
         [] ->
-            getTransAddedNode transformer
+            ReplaceWithChild (getTransAddedNode transformer)
 
         [ hereIndex ] ->
             mutateNthChild hereIndex transformer ast
 
         hereIndex :: rest ->
-            mutAstChildren
-                (List.indexedMap
+            ReplaceWithChild
+                (mutAstChildren
                     (\index child ->
                         if index == hereIndex then
-                            mutateTargetChild rest transformer child
+                            mutateTargetChild1 rest transformer child
 
                         else
-                            child
+                            ReplaceWithChild child
                     )
+                    ast
                 )
-                ast
+
+
+mutateTargetChild : List Int -> ASTTransformation -> AST -> AST
+mutateTargetChild path transformer ast =
+    case mutateTargetChild1 path transformer ast of
+        ReplaceWithChild c ->
+            c
+
+        PrependOneChild _ ->
+            Number { value = -500 }
 
 
 generateVarName : List String -> Int -> String
@@ -165,16 +232,13 @@ getNthVarName varNames path =
     atIndex varNames (List.head path |> Maybe.withDefault -1)
 
 
+isVariableAvailable : List String -> List Int -> String -> Bool
 isVariableAvailable varNames path varName =
     let
         varNamesUpToHere =
-            List.drop (List.head path |> Maybe.withDefault -1) varNames
+            List.take (List.head path |> Maybe.withDefault -1) varNames
     in
-    if List.any ((==) varName) varNamesUpToHere then
-        False
-
-    else
-        True
+    List.any ((==) varName) varNamesUpToHere
 
 
 getNewVarNames : Path -> List String -> ASTTransformation -> List String
