@@ -50,6 +50,7 @@ initialModel =
 type Msg
     = InitiateAdd Path String
     | InitiateReplace Path String
+    | Noop
 
 
 applyAstMutation : Model -> Model
@@ -82,6 +83,9 @@ makeReplacement path addition search =
 applyMsg : Msg -> Model -> Model
 applyMsg msg model =
     case msg of
+        Noop ->
+            model
+
         InitiateAdd path search ->
             { model | replacing = makeReplacement path True search }
 
@@ -89,13 +93,13 @@ applyMsg msg model =
             { model | replacing = makeReplacement path False search }
 
 
-ctxAppendPath : IterationContext -> Int -> IterationContext
-ctxAppendPath context index =
+ctxEnterPath : IterationContext -> Int -> IterationContext
+ctxEnterPath context index =
     { context | path = context.path ++ [ index ] }
 
 
-ctxReplacingPath : IterationContext -> Maybe Path
-ctxReplacingPath context =
+ctxCurrentReplacePath : IterationContext -> Maybe Path
+ctxCurrentReplacePath context =
     context.replacing
         |> Maybe.andThen
             (\r ->
@@ -107,8 +111,8 @@ ctxReplacingPath context =
             )
 
 
-ctxAddingPath : IterationContext -> Maybe Path
-ctxAddingPath context =
+ctxCurrentAddPath : IterationContext -> Maybe Path
+ctxCurrentAddPath context =
     context.replacing
         |> Maybe.andThen
             (\r ->

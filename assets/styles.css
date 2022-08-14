@@ -1,3 +1,5 @@
+
+/* Resets */
 .ast-program {
     background-color: #f3eeec;
     border-radius: 0.25rem;
@@ -13,72 +15,13 @@
     --color-add: #e99a6c;
 }
 
-button {
+.ast-button {
     font-size: 1em;
     color: inherit;
     background: transparent;
     border: 0 none;
     padding: 0;
     vertical-align: middle;
-}
-
-.ast-add-button, .ast-add-target {
-    align-self: stretch;
-    display: flex;
-    position: relative;
-    padding: 0.4em;
-    transition: all 200ms ease;
-}
-
-.ast-add-button > span, .ast-add-target > span {
-    position: absolute;
-    inset: 0.4em;
-    background-color: transparent;
-    transition: all 80ms ease;
-}
-
-.ast-add-button:hover > span {
-    inset: 0.3em;
-    background-color: var(--color-highlight);
-}
-
-.layout-horizontal > .ast-add-button,
-.layout-horizontal > .ast-add-target {
-    width: 0.3em;
-    margin-top: -0.3em;
-    margin-bottom: -0.3em;
-}
-
-.layout-vertical > .ast-add-button,
-.layout-vertical > .ast-add-target {
-    height: 0.3em;
-    margin-left: -0.3em;
-    margin-right: -0.3em;
-}
-
-
-/* add-button becomes add-target */
-
-.ast-add-target {
-    color: var(--color-add);
-    --var-color-regular: var(--color-add);
-}
-.ast-add-target > span {
-    background-color: var(--color-add);
-    inset: 0.3em;
-}
-.layout-horizontal > .ast-add-target {
-    margin-left: 0.25em;
-    margin-right: 0.25em;
-}
-.layout-vertical > .ast-add-target {
-    margin-top: 0.25em;
-    margin-bottom: 0.25em;
-}
-
-.ast-replaceable--being-replaced {
-    color: var(--color-remove);
-    --var-color-regular: var(--color-remove);
 }
 
 .layout-horizontal {
@@ -93,4 +36,61 @@ button {
 
 .layout-vertical > * + * {
     margin-top: 0;
+}
+
+.ast-add-button {
+    align-self: stretch;
+    display: flex;
+    position: relative;
+    padding: 0.4em;
+    transition: all 200ms ease;
+}
+
+.layout-horizontal > .ast-add-button {
+    width: 0.3em;
+    margin-top: -0.3em;
+    margin-bottom: -0.3em;
+}
+
+.layout-vertical > .ast-add-button {
+    height: 0.3em;
+    margin-left: -0.3em;
+    margin-right: -0.3em;
+}
+
+.ast-add-button > span {
+    position: absolute;
+    inset: 0.4em;
+    background-color: transparent;
+    transition: all 80ms ease;
+}
+
+.ast-add-button--clickable:hover > span {
+    inset: 0.3em;
+    background-color: var(--color-highlight);
+}
+
+
+/* add-button becomes active */
+
+.ast-add-button--adding {
+    color: var(--color-add);
+    --var-color-regular: var(--color-add);
+}
+.ast-add-button--adding > span {
+    background-color: var(--color-add);
+    inset: 0.3em;
+}
+.layout-horizontal > .ast-add-button--adding {
+    margin-left: 0.25em;
+    margin-right: 0.25em;
+}
+.layout-vertical > .ast-add-button--adding {
+    margin-top: 0.25em;
+    margin-bottom: 0.25em;
+}
+
+.ast-replaceable--being-replaced {
+    color: var(--color-remove);
+    --var-color-regular: var(--color-remove);
 }

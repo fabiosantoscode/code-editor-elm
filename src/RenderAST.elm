@@ -1,67 +1,56 @@
 module RenderAST exposing (..)
+
 import AST exposing (..)
 import Html exposing (..)
-import Model exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
+import Model exposing (..)
 
 
-beingReplacedClasses : IterationContext -> List String
-beingReplacedClasses ctx =
-    if ctxReplacingPath ctx == Just ctx.path then
-        [ "ast-replaceable", "ast-replaceable--being-replaced" ]
-
-    else
-        [ "ast-replaceable" ]
-
-
-
-mapWithAddButtons : IterationContext -> (Int -> AST -> Html Msg) -> List AST -> List (Html Msg)
-mapWithAddButtons ctx renderer astList =
+mapWithAddButtons : IterationContext -> List AST -> List (Html Msg)
+mapWithAddButtons ctx astList =
     let
-        conditonalAddButton =
-            \index ->
-                let
-                    innerCtx =
-                        ctxAppendPath ctx index
-                in
-                addButton innerCtx.path (ctxAddingPath innerCtx == Just innerCtx.path)
+        childCtx =
+            ctxEnterPath ctx
 
         renderWithButton =
-            \index astChild ->
-                [ conditonalAddButton index, renderer index astChild ]
+            \index child ->
+                [ addButton (childCtx index)
+                , renderAst (childCtx index) child
+                ]
+
+        addButtonAtEnd =
+            addButton (childCtx (List.length astList))
 
         mapped =
             List.indexedMap renderWithButton astList
                 |> List.foldr (++) []
     in
-    mapped ++ [ conditonalAddButton (List.length astList) ]
+    mapped ++ [ addButtonAtEnd ]
 
 
 replaceButton : Path -> String -> Html Msg -> Html Msg
 replaceButton path className astHtml =
     button
-        [ class ("ast-replace-button " ++ className)
+        [ class ("ast-button ast-replace-button " ++ className)
         , onClick (InitiateReplace path "")
         ]
         [ astHtml ]
 
 
-addButton : Path -> Bool -> Html Msg
-addButton path adding =
+addButton : IterationContext -> Html Msg
+addButton ctx =
     let
-        className =
-            if adding then
-                "ast-add-target"
+        attributes =
+            if ctxCurrentAddPath ctx == Just ctx.path then
+                [ class "ast-button ast-add-button ast-add-button--adding" ]
 
             else
-                "ast-add-button"
+                [ class "ast-button ast-add-button ast-add-button--clickable"
+                , onClick (InitiateAdd ctx.path "")
+                ]
     in
-    button
-        [ class className
-        , onClick (InitiateAdd path "")
-        ]
-        [ span [] [] ]
+    button attributes [ span [] [] ]
 
 
 
@@ -78,7 +67,7 @@ renderForm path inner =
     let
         punc =
             \character ->
-                button [ class "ast-punctuation", onClick (InitiateReplace path "") ] [ text character ]
+                button [ class "ast-button ast-punctuation", onClick (InitiateReplace path "") ] [ text character ]
     in
     punc "(" :: inner ++ [ punc ")" ]
 
@@ -94,6 +83,15 @@ layoutClasses ast =
 
         _ ->
             []
+
+
+beingReplacedClasses : IterationContext -> List String
+beingReplacedClasses ctx =
+    if ctxCurrentReplacePath ctx == Just ctx.path then
+        [ "ast-replaceable", "ast-replaceable--being-replaced" ]
+
+    else
+        [ "ast-replaceable" ]
 
 
 renderAst : IterationContext -> AST -> Html Msg
@@ -116,22 +114,16 @@ renderAst ctx ast =
                 ++ beingReplacedClasses ctx
                 ++ layoutClasses ast
                 |> String.join " "
-
-        recurse =
-            \i child -> renderAst (ctxAppendPath ctx i) child
-
-        recurseChildren =
-            mapWithAddButtons ctx recurse
     in
     case ast of
         Program { expressions } ->
-            div [ class className ] (recurseChildren expressions)
+            div [ class className ] (mapWithAddButtons ctx expressions)
 
         Form { head, tail } ->
             div [ class className ]
                 (renderForm ctx.path
                     (replaceButton ctx.path "" (renderPunctuation head)
-                        :: recurseChildren tail
+                        :: mapWithAddButtons ctx tail
                     )
                 )
 
