@@ -35,21 +35,18 @@ addButton ctx =
     button attributes [ span [] [] ]
 
 
-varNameIsClickable : Model -> List String -> IterationContext -> String -> Bool
-varNameIsClickable model varNames ctx varName =
-    case model.replacing of
-        Nothing ->
-            False
-
-        Just r ->
-            isVariableAvailable varNames r.path varName
+varNameIsClickable : Model -> List String -> String -> Bool
+varNameIsClickable model varNames varName =
+    model.replacing
+        |> Maybe.map (\r -> isVariableVisibleFrom varNames r.path varName)
+        |> Maybe.withDefault False
 
 
-renderClickableVarName : Model -> List String -> IterationContext -> String -> Html Msg
-renderClickableVarName model varNames ctx varName =
+renderClickableVarName : Model -> List String -> String -> Html Msg
+renderClickableVarName model varNames varName =
     let
         attributes =
-            if varNameIsClickable model varNames ctx varName then
+            if varNameIsClickable model varNames varName then
                 [ class "ast-button ast-var-name ast-var-name--clickable"
                 , onClick (CommitChange (Reference { name = varName }))
                 ]
@@ -92,23 +89,20 @@ type alias Renderer =
     IterationContext -> AST -> List (Html Msg)
 
 
-mapWithAddButtons : Renderer -> IterationContext -> List AST -> List (Html Msg)
-mapWithAddButtons renderChild ctx astList =
+mapWithAddButtons : IterationContext -> List a -> (Int -> a -> List (Html Msg)) -> List (Html Msg)
+mapWithAddButtons ctx astList renderChild =
     let
-        childCtx =
-            ctxEnterPath ctx
-
         renderWithButton =
             \index child ->
-                addButton (childCtx index)
-                    :: renderChild (childCtx index) child
+                addButton (ctxEnterPath ctx index)
+                    :: renderChild index child
 
         mapped =
             List.indexedMap renderWithButton astList
                 |> List.foldr (++) []
 
         addButtonAtEnd =
-            addButton (childCtx (List.length astList))
+            addButton (ctxEnterPath ctx (List.length astList))
     in
     mapped ++ [ addButtonAtEnd ]
 
@@ -134,13 +128,17 @@ renderEditor model ctx ast =
                 Reference _ ->
                     [ "ast-reference" ]
 
+                Incomplete ->
+                    [ "ast-incomplete" ]
+
         className =
             classListFor
                 ++ beingReplacedClasses ctx
                 |> String.join " "
 
         childRender =
-            renderEditor model
+            \index child ->
+                renderEditor model (ctxEnterPath ctx index) child
     in
     case ast of
         Block p ->
@@ -149,20 +147,20 @@ renderEditor model ctx ast =
                     p.assignments |> List.map (\a -> a.name)
 
                 renderWithVarName =
-                    \childCtx childAst ->
-                        renderClickableVarName model varNames childCtx (getNthVarName varNames childCtx.path)
-                            :: childRender childCtx childAst
-
-                expressions =
-                    getAstChildren ast
+                    \index { expression, name } ->
+                        renderClickableVarName model varNames name
+                            :: childRender index expression
             in
-            [ div [ class className ] (mapWithAddButtons renderWithVarName ctx expressions) ]
+            [ div
+                [ class className ]
+                (mapWithAddButtons ctx p.assignments renderWithVarName)
+            ]
 
         Form { head, tail } ->
             [ div [ class className ]
                 (renderForm ctx.path
                     (replaceButton ctx.path "" (renderPunctuation head)
-                        :: mapWithAddButtons childRender ctx tail
+                        :: mapWithAddButtons ctx tail childRender
                     )
                 )
             ]
@@ -172,3 +170,6 @@ renderEditor model ctx ast =
 
         Reference { name } ->
             [ replaceButton ctx.path className (text name) ]
+
+        Incomplete ->
+            [ replaceButton ctx.path className (text "...") ]

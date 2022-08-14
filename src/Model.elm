@@ -71,13 +71,10 @@ applyAstMutation model ast =
 
                     else
                         ReplaceWith ast
-
-                mutatedProgram =
-                    mutateTargetChild replacement.path
-                        transformation
-                        model.program
             in
-            { program = mutatedProgram, replacing = Nothing }
+            { program = commitASTTransformation replacement.path transformation model.program
+            , replacing = Nothing
+            }
 
         Nothing ->
             model
