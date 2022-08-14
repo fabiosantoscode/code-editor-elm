@@ -6,6 +6,7 @@ import AST exposing (..)
 type alias Model =
     { program : AST
     , replacing : Replacement
+    , varNames : List String
     }
 
 
@@ -44,6 +45,7 @@ initialModel =
             , search = ""
             , addition = True
             }
+    , varNames = [ "form", "func" ]
     }
 
 
@@ -56,24 +58,28 @@ type Msg
 
 applyAstMutation : Model -> AST -> Model
 applyAstMutation model ast =
-    let
-        applier =
-            \replacement ->
-                mutateTargetChild replacement.path
-                    (if replacement.addition then
+    case model.replacing of
+        Just replacement ->
+            let
+                transformation =
+                    if replacement.addition then
                         Insert ast
 
-                     else
+                    else
                         ReplaceWith ast
-                    )
-                    model.program
 
-        newProgram =
-            model.replacing
-                |> Maybe.map applier
-                |> Maybe.withDefault model.program
-    in
-    { model | program = newProgram, replacing = Nothing }
+                mutatedProgram =
+                    mutateTargetChild replacement.path
+                        transformation
+                        model.program
+
+                mutatedVarNames =
+                    getNewVarNames replacement.path model.varNames transformation
+            in
+            { program = mutatedProgram, varNames = mutatedVarNames, replacing = Nothing }
+
+        Nothing ->
+            model
 
 
 makeReplacement : Path -> Bool -> String -> Replacement

@@ -13,6 +13,9 @@
     --color-highlight: #111;
     --color-remove: #da6e2f;
     --color-add: #e99a6c;
+
+    --color-var-name: #000080;
+    --color-var-name--clickable: #8f8dff;
 }
 
 .ast-button {
@@ -94,4 +97,19 @@
 .ast-replaceable--being-replaced {
     color: var(--color-remove);
     --var-color-regular: var(--color-remove);
+}
+
+/* variable names */
+.ast-var-name {
+    color: var(--color-var-name);
+}
+
+.ast-var-name--clickable {
+    color: var(--color-var-name--clickable);
+    text-decoration: underline;
+    font-weight: medium;
+}
+
+.ast-reference {
+    color: var(--color-var-name);
 }

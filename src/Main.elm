@@ -56,10 +56,10 @@ renderReplaceUi { replacing } =
 renderModel : Model -> Html Msg
 renderModel model =
     div []
-        ([ node "link" [ rel "stylesheet", href "/assets/styles.css" ] []
-         , renderEditor
-            { path = [], replacing = model.replacing }
-            model.program
-         ]
+        (node "link" [ rel "stylesheet", href "/assets/styles.css" ] []
+            :: renderEditor
+                model
+                { path = [], replacing = model.replacing }
+                model.program
             ++ renderReplaceUi model
         )
