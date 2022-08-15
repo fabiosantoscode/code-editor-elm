@@ -5,7 +5,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
 import Model exposing (..)
-import Utils exposing (flatMap)
+import Utils exposing (..)
 
 
 
@@ -62,14 +62,17 @@ renderClickableVarName model varNames varName =
 --- Rendering AST nodes
 
 
-renderForm : Path -> String -> List (Html Msg) -> List (Html Msg)
-renderForm path head tail =
+renderForm : Path -> RForm -> List (Html Msg) -> List (Html Msg)
+renderForm path form tail =
     let
-        punc =
-            \character ->
-                button [ class "ast-button ast-punctuation", onClick (InitiateReplace path "") ] [ text character ]
+        btn =
+            replaceButton path "ast-form__head"
+
+        endBtn =
+            replaceButton path "ast-form__endparen"
+
     in
-    replaceButton path "ast-form__head" (punc (head ++ "(")) :: tail ++ [ punc ")" ]
+    btn (text (form.head ++ "(")) :: tail ++ [ endBtn (text ")") ]
 
 
 beingReplacedClasses : IterationContext -> List String
@@ -81,8 +84,23 @@ beingReplacedClasses ctx =
         [ "ast-replaceable" ]
 
 
-type alias Renderer =
-    IterationContext -> AST -> List (Html Msg)
+classListFor : AST -> List String
+classListFor ast =
+    case ast of
+        Block _ ->
+            [ "ast-program", "layout-vertical" ]
+
+        Form _ ->
+            [ "ast-form", "layout-horizontal" ]
+
+        Number _ ->
+            [ "ast-number" ]
+
+        Reference _ ->
+            [ "ast-reference", "color-var-name" ]
+
+        Incomplete ->
+            [ "ast-incomplete" ]
 
 
 mapWithAddButtons : IterationContext -> List a -> (Int -> a -> List (Html Msg)) -> List (Html Msg)
@@ -92,43 +110,20 @@ mapWithAddButtons ctx astList renderChild =
             \index child ->
                 addButton (ctxEnterPath ctx index)
                     :: renderChild index child
-
-        mapped =
-            List.indexedMap renderWithButton astList
-                |> List.foldr (++) []
-
-        addButtonAtEnd =
-            addButton (ctxEnterPath ctx (List.length astList))
     in
-    mapped ++ [ addButtonAtEnd ]
+    flatMap renderWithButton astList
+        ++ [ addButton (ctxEnterPath ctx (List.length astList)) ]
 
 
 
 --- Bringing it all together
 
 
-renderEditor : Model -> Renderer
+renderEditor : Model -> IterationContext -> AST -> List (Html Msg)
 renderEditor model ctx ast =
     let
-        classListFor =
-            case ast of
-                Block _ ->
-                    [ "ast-program", "layout-vertical" ]
-
-                Form _ ->
-                    [ "ast-form", "layout-horizontal" ]
-
-                Number _ ->
-                    [ "ast-number" ]
-
-                Reference _ ->
-                    [ "ast-reference", "color-var-name" ]
-
-                Incomplete ->
-                    [ "ast-incomplete" ]
-
         className =
-            classListFor
+            classListFor ast
                 ++ beingReplacedClasses ctx
                 |> String.join " "
 
@@ -152,11 +147,14 @@ renderEditor model ctx ast =
                 (mapWithAddButtons ctx p.assignments renderWithVarName)
             ]
 
-        Form { head, tail } ->
-            [ div [ class className, class ("ast-form--depth-" ++ String.fromInt (List.length ctx.path)) ]
+        Form f ->
+            [ div
+                [ class className
+                , class ("ast-form--depth-" ++ String.fromInt (List.length ctx.path))
+                ]
                 (renderForm ctx.path
-                    head
-                    (flatMap childRender tail)
+                    f
+                    (flatMap childRender f.tail)
                 )
             ]
 

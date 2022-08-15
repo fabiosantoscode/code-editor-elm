@@ -1,17 +1,17 @@
 module AST exposing (..)
 
-import Html exposing (a)
 import Set exposing (Set)
-import Utils exposing (flatMap)
+import Utils exposing (..)
 
 
 type alias Assign =
     { name : String, expression : AST }
 
+type alias RForm = { head : String, tail : List AST }
 
 type AST
     = Block { assignments : List Assign }
-    | Form { head : String, tail : List AST }
+    | Form RForm
     | Number { value : Int }
     | Reference { name : String }
     | Incomplete
@@ -44,19 +44,6 @@ getTransAddedNode trans =
 
         ReplaceWith x ->
             x
-
-
-getAstChildren : AST -> List AST
-getAstChildren ast =
-    case ast of
-        Block p ->
-            p.assignments |> List.map (\a -> a.expression)
-
-        Form f ->
-            f.tail
-
-        _ ->
-            []
 
 
 mutAstChildren : (Int -> AST -> ASTTransformation) -> AST -> AST
@@ -110,8 +97,16 @@ addAstChild ast newChild =
 mutateNthChild : Int -> ASTTransformation -> AST -> ASTTransformation
 mutateNthChild index trans ast =
     let
-        currentChildren =
-            getAstChildren ast
+        childCount =
+            case ast of
+                Block p ->
+                    p.assignments |> List.length
+
+                Form f ->
+                    f.tail |> List.length
+
+                _ ->
+                    -1
 
         indexedMutator =
             \hereIndex child ->
@@ -121,15 +116,15 @@ mutateNthChild index trans ast =
                 else
                     ReplaceWith child
     in
-    if index == List.length currentChildren then
+    if index == childCount then
         ReplaceWith (addAstChild ast (getTransAddedNode trans))
 
     else
         ReplaceWith (mutAstChildren indexedMutator ast)
 
 
-mutateTargetChild1 : List Int -> ASTTransformation -> AST -> ASTTransformation
-mutateTargetChild1 path transformer ast =
+mutateTargetChildInner : List Int -> ASTTransformation -> AST -> ASTTransformation
+mutateTargetChildInner path transformer ast =
     case path of
         [] ->
             ReplaceWith (getTransAddedNode transformer)
@@ -142,7 +137,7 @@ mutateTargetChild1 path transformer ast =
                 (mutAstChildren
                     (\index child ->
                         if index == hereIndex then
-                            mutateTargetChild1 rest transformer child
+                            mutateTargetChildInner rest transformer child
 
                         else
                             ReplaceWith child
@@ -153,7 +148,7 @@ mutateTargetChild1 path transformer ast =
 
 mutateTargetChild : List Int -> ASTTransformation -> AST -> AST
 mutateTargetChild path transformer ast =
-    case mutateTargetChild1 path transformer ast of
+    case mutateTargetChildInner path transformer ast of
         ReplaceWith c ->
             c
 
@@ -178,7 +173,6 @@ generateVarName existingNames index =
         newName
 
 
-
 isVariableVisibleFrom : List String -> Path -> String -> Bool
 isVariableVisibleFrom varNames path varName =
     let
@@ -186,11 +180,6 @@ isVariableVisibleFrom varNames path varName =
             List.take (List.head path |> Maybe.withDefault -1) varNames
     in
     List.any ((==) varName) varNamesUpToHere
-
-
-setFlatMap : (a -> Set comparable) -> List a -> Set comparable
-setFlatMap fn inp =
-    List.map fn inp |> List.foldr Set.union Set.empty
 
 
 declaredVariableNames : AST -> Set String

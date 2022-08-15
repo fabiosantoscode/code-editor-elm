@@ -11,12 +11,27 @@
 
     --color-regular: #111;
     --color-highlight: #111;
-    --color-remove: #da6e2f;
-    --color-add: #e99a6c;
+    --color-replace: hsl(240, 54%, 38%);
 
-    --color-var-name: #000080;
-    --color-var-name--clickable: #8f8dff;
+    --color-var-name: hsl(205, 69%, 49%);
+    --color-var-name--clickable: hsl(205, 69%, 49%);
+
+    --color-number: #5c0080;
+    --color-number--clickable: #9845b9;
+
+    --bg-color-form--depth-1: hsl(23, 12%, 87%);
+    --bg-color-form--depth-2: hsl(23, 12%, 66%);
+    --bg-color-form--depth-3: hsl(23, 12%, 57%);
+    --bg-color-cell: hsl(240, 100%, 90%);  /* Boxes to fill in */
+
+    --inline-transition: all 80ms ease;
+    --vertical-transition: all 300ms ease;
+
+    --form-child-padding: 0.3em;
+    --form-child-vertical-padding: 0.15em;
 }
+
+/* atomic */
 
 .ast-button {
     text-align: inherit;
@@ -28,9 +43,18 @@
     vertical-align: middle;
 }
 
+.color-var-name {
+    color: var(--color-var-name);
+}
+
 .layout-horizontal {
     display: inline-flex;
-    align-items: center;
+    align-items: stretch;
+}
+
+.layout-horizontal > :not(.layout-horizontal) {
+    padding-left: var(--form-child-padding);
+    padding-right: var(--form-child-padding);
 }
 
 .layout-vertical {
@@ -42,33 +66,21 @@
     margin-top: 0;
 }
 
+/* add button */
+
 .ast-add-button {
     align-self: stretch;
     display: flex;
     position: relative;
     padding: 0.4em;
-    transition: all 200ms ease;
+    transition: var(--vertical-transition);
 }
-
-.layout-horizontal > .ast-add-button {
-    width: 0.3em;
-    margin-top: -0.3em;
-    margin-bottom: -0.3em;
-}
-
-.layout-vertical > .ast-add-button {
-    height: 0.3em;
-    margin-left: -0.3em;
-    margin-right: -0.3em;
-}
-
-/* add button */
 
 .ast-add-button > span {
     position: absolute;
     inset: 0.4em;
     background-color: transparent;
-    transition: all 80ms ease;
+    transition: var(--inline-transition);
 }
 
 .ast-add-button--clickable:hover > span {
@@ -77,39 +89,111 @@
 }
 
 .ast-add-button--adding {
-    color: var(--color-add);
-    --var-color-regular: var(--color-add);
+    color: var(--color-replace);
+    --var-color-regular: var(--color-replace);
 }
+
 .ast-add-button--adding > span {
-    background-color: var(--color-add);
+    background-color: var(--color-replace);
     inset: 0.3em;
 }
 
-.layout-horizontal > .ast-add-button--adding {
-    margin-left: 0.25em;
-    margin-right: 0.25em;
-}
-.layout-vertical > .ast-add-button--adding {
-    margin-top: 0.25em;
-    margin-bottom: 0.25em;
-}
-
-/* layout */
+/* when being replaced */
 
 .ast-replaceable--being-replaced {
-    color: var(--color-remove);
-    --var-color-regular: var(--color-remove);
+    color: var(--color-replace);
+    --var-color-regular: var(--color-replace);
+}
+
+/* nothing (yet) */
+
+.ast-incomplete {
+    position: relative;
+    width: 1.1em;
+}
+
+.ast-incomplete:before {
+    content: '';
+    display: block;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: var(--form-child-vertical-padding);
+    bottom: var(--form-child-vertical-padding);
+    transition: var(--inline-transition);
+    background: var(--bg-color-cell);
+}
+
+.ast-incomplete.ast-replaceable--being-replaced:before {
+    outline: 4px solid var(--color-replace);
+}
+
+.ast-incomplete.ast-replaceable--being-replaced {
+    width: 2em;
 }
 
 /* variable names */
+
+.ast-var-name {
+    margin-left: -0.5em;
+}
+
 .ast-var-name--clickable {
     color: var(--color-var-name--clickable);
     text-decoration: underline;
-    font-weight: medium;
+    font-weight: bold;
     cursor: pointer;
 }
 
-/* atomic */
-.color-var-name {
-    color: var(--color-var-name);
+/* numbers */
+
+.ast-number {
+    color: var(--color-number);
+}
+
+.ast-number.ast-replaceable--being-replaced {
+    color: var(--color-number--clickable);
+}
+
+/* forms */
+
+.ast-form {
+    width: max-content;
+    background-color: var(--bg-color-form--depth-1);
+    border-radius: 5px;
+}
+
+.ast-form.ast-replaceable--being-replaced {
+    outline: 4px solid var(--color-replace);
+}
+
+.ast-form--depth-2 {
+    background-color: var(--bg-color-form--depth-2);
+}
+
+.ast-form--depth-3 {
+    background-color: var(--bg-color-form--depth-3);
+}
+
+.ast-form > * {
+    padding-top: var(--form-child-vertical-padding);
+    padding-bottom: var(--form-child-vertical-padding);
+}
+
+.ast-form > .ast-form {
+    /* Make sure forms nest properly. They should be visibly contained. */
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-top: var(--form-child-vertical-padding);
+    margin-bottom: var(--form-child-vertical-padding);
+}
+
+.ast-form > .ast-form__head {
+    padding-left: 0.4em;
+    padding-right: 0.1em;
+}
+
+.ast-form > .ast-form__endparen {
+    padding-left: 0.2em;
+    padding-right: 0.2em;
 }
