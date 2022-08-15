@@ -5,6 +5,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
 import Model exposing (..)
+import Utils exposing (flatMap)
 
 
 
@@ -14,7 +15,7 @@ import Model exposing (..)
 replaceButton : Path -> String -> Html Msg -> Html Msg
 replaceButton path className astHtml =
     button
-        [ class ("ast-button ast-replace-button " ++ className)
+        [ class ("ast-button " ++ className)
         , onClick (InitiateReplace path "")
         ]
         [ astHtml ]
@@ -47,12 +48,12 @@ renderClickableVarName model varNames varName =
     let
         attributes =
             if varNameIsClickable model varNames varName then
-                [ class "ast-button ast-var-name ast-var-name--clickable"
+                [ class "ast-button color-var-name ast-var-name ast-var-name--clickable"
                 , onClick (CommitChange (Reference { name = varName }))
                 ]
 
             else
-                [ class "ast-button ast-var-name" ]
+                [ class "ast-button color-var-name ast-var-name" ]
     in
     button attributes [ text (varName ++ ":") ]
 
@@ -61,19 +62,14 @@ renderClickableVarName model varNames varName =
 --- Rendering AST nodes
 
 
-renderPunctuation : String -> Html Msg
-renderPunctuation symbol =
-    span [ class "ast-punctuation" ] [ text symbol ]
-
-
-renderForm : Path -> List (Html Msg) -> List (Html Msg)
-renderForm path inner =
+renderForm : Path -> String -> List (Html Msg) -> List (Html Msg)
+renderForm path head tail =
     let
         punc =
             \character ->
                 button [ class "ast-button ast-punctuation", onClick (InitiateReplace path "") ] [ text character ]
     in
-    punc "(" :: inner ++ [ punc ")" ]
+    replaceButton path "ast-form__head" (punc (head ++ "(")) :: tail ++ [ punc ")" ]
 
 
 beingReplacedClasses : IterationContext -> List String
@@ -126,7 +122,7 @@ renderEditor model ctx ast =
                     [ "ast-number" ]
 
                 Reference _ ->
-                    [ "ast-reference" ]
+                    [ "ast-reference", "color-var-name" ]
 
                 Incomplete ->
                     [ "ast-incomplete" ]
@@ -157,11 +153,10 @@ renderEditor model ctx ast =
             ]
 
         Form { head, tail } ->
-            [ div [ class className ]
+            [ div [ class className, class ("ast-form--depth-" ++ String.fromInt (List.length ctx.path)) ]
                 (renderForm ctx.path
-                    (replaceButton ctx.path "" (renderPunctuation head)
-                        :: mapWithAddButtons ctx tail childRender
-                    )
+                    head
+                    (flatMap childRender tail)
                 )
             ]
 
@@ -172,4 +167,4 @@ renderEditor model ctx ast =
             [ replaceButton ctx.path className (text name) ]
 
         Incomplete ->
-            [ replaceButton ctx.path className (text "...") ]
+            [ replaceButton ctx.path className (text "") ]

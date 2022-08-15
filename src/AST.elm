@@ -2,6 +2,7 @@ module AST exposing (..)
 
 import Html exposing (a)
 import Set exposing (Set)
+import Utils exposing (flatMap)
 
 
 type alias Assign =
@@ -58,24 +59,6 @@ getAstChildren ast =
             []
 
 
-setAstChildren : AST -> List AST -> AST
-setAstChildren ast newChildren =
-    case ast of
-        Block p ->
-            Block { p | assignments = newChildren |> List.map (\c -> { name = "", expression = c }) }
-
-        Form f ->
-            Form { f | tail = newChildren }
-
-        _ ->
-            ast
-
-
-flatMap : (Int -> a -> List b) -> List a -> List b
-flatMap f xs =
-    xs |> List.indexedMap f |> List.foldr (++) []
-
-
 mutAstChildren : (Int -> AST -> ASTTransformation) -> AST -> AST
 mutAstChildren mutator ast =
     case ast of
@@ -122,16 +105,6 @@ addAstChild ast newChild =
 
         _ ->
             ast
-
-
-makeMutator : ASTTransformation -> (Maybe AST -> List (Maybe AST))
-makeMutator transformation maybeExisting =
-    case transformation of
-        Insert newNode ->
-            [ Just newNode, maybeExisting ]
-
-        ReplaceWith newNode ->
-            [ Just newNode ]
 
 
 mutateNthChild : Int -> ASTTransformation -> AST -> ASTTransformation
@@ -204,24 +177,6 @@ generateVarName existingNames index =
     else
         newName
 
-
-atIndex : List String -> Int -> String
-atIndex list index =
-    case list of
-        [] ->
-            "NAME MISSING"
-
-        x :: xs ->
-            if index == 0 then
-                x
-
-            else
-                atIndex xs (index - 1)
-
-
-getNthVarName : List String -> Path -> String
-getNthVarName varNames path =
-    atIndex varNames (List.head path |> Maybe.withDefault -1)
 
 
 isVariableVisibleFrom : List String -> Path -> String -> Bool

@@ -36,9 +36,17 @@ initialModel =
                                     , tail =
                                         [ Number { value = 1 }
                                         , Number { value = 2 }
+                                        , Form
+                                            { head = "func"
+                                            , tail =
+                                                [ Number { value = 1 }
+                                                , Number { value = 2 }
+                                                , Number { value = 3 }, Incomplete
+                                                ]
+                                            }
                                         ]
                                     }
-                                , Number { value = 3 }
+                                
                                 ]
                             }
                   }
