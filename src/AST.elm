@@ -7,10 +7,17 @@ import Utils exposing (..)
 type alias Assign =
     { name : String, expression : AST }
 
-type alias RForm = { head : String, tail : List AST }
+
+type alias RForm =
+    { head : String, tail : List AST }
+
+
+type alias RBlock =
+    { assignments : List Assign }
+
 
 type AST
-    = Block { assignments : List Assign }
+    = Block RBlock
     | Form RForm
     | Number { value : Int }
     | Reference { name : String }

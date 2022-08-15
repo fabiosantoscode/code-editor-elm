@@ -70,7 +70,6 @@ renderForm path form tail =
 
         endBtn =
             replaceButton path "ast-form__endparen"
-
     in
     btn (text (form.head ++ "(")) :: tail ++ [ endBtn (text ")") ]
 
@@ -103,19 +102,6 @@ classListFor ast =
             [ "ast-incomplete" ]
 
 
-mapWithAddButtons : IterationContext -> List a -> (Int -> a -> List (Html Msg)) -> List (Html Msg)
-mapWithAddButtons ctx astList renderChild =
-    let
-        renderWithButton =
-            \index child ->
-                addButton (ctxEnterPath ctx index)
-                    :: renderChild index child
-    in
-    flatMap renderWithButton astList
-        ++ [ addButton (ctxEnterPath ctx (List.length astList)) ]
-
-
-
 --- Bringing it all together
 
 
@@ -126,10 +112,6 @@ renderEditor model ctx ast =
             classListFor ast
                 ++ beingReplacedClasses ctx
                 |> String.join " "
-
-        childRender =
-            \index child ->
-                renderEditor model (ctxEnterPath ctx index) child
     in
     case ast of
         Block p ->
@@ -140,14 +122,21 @@ renderEditor model ctx ast =
                 renderWithVarName =
                     \index { expression, name } ->
                         renderClickableVarName model varNames name
-                            :: childRender index expression
+                            :: renderEditor model (ctxEnterPath ctx index) expression
+                            ++ [ addButton (ctxEnterPath ctx index) ]
             in
             [ div
                 [ class className ]
-                (mapWithAddButtons ctx p.assignments renderWithVarName)
+                (flatMap renderWithVarName p.assignments
+                    ++ [ addButton (ctxEnterPath ctx (List.length p.assignments)) ])
             ]
 
         Form f ->
+            let
+                childRender =
+                    \index child ->
+                        renderEditor model (ctxEnterPath ctx index) child
+            in
             [ div
                 [ class className
                 , class ("ast-form--depth-" ++ String.fromInt (List.length ctx.path))
