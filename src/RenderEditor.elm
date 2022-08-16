@@ -30,16 +30,24 @@ addStatementButton ctx =
 
         attributes =
             if ctxIsAddingPath ctx ctx.path then
-                baseClass
-                    ++ [ class "ast-add-statement-button--adding" ]
+                button
+                    (baseClass
+                        ++ [ class "ast-add-statement-button--adding"
+                           , class "outline-replace"
+                           ]
+                    )
+                    [ span [] [text "Add statement"] ]
 
             else
-                baseClass
-                    ++ [ class "ast-add-statement-button--clickable"
-                       , onClick (InitiateAdd ctx.path "")
-                       ]
+                button
+                    (baseClass
+                        ++ [ class "ast-add-statement-button--clickable"
+                           , onClick (InitiateAdd ctx.path "")
+                           ]
+                    )
+                    [ span [] [] ]
     in
-    button attributes [ span [] [] ]
+    attributes
 
 
 varNameIsClickable : Model -> List String -> String -> Bool

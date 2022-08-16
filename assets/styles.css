@@ -83,25 +83,28 @@
     transition: var(--vertical-transition);
 }
 
-.ast-add-statement-button > span {
+.ast-add-statement-button--clickable > span {
     position: absolute;
     inset: 0.4em;
     background-color: transparent;
-    transition: var(--inline-transition);
+    transition: var(--vertical-transition);
 }
 
 .ast-add-statement-button--clickable:hover > span {
     inset: 0.3em;
-    background-color: var(--color-highlight);
+    background-color: var(--color-replace);
 }
 
 .ast-add-statement-button--adding {
-    color: var(--color-replace);
+    padding-bottom: 2em;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+    overflow: hidden;
 }
 
-.ast-add-statement-button--adding > span {
-    background-color: var(--color-replace);
-    inset: 0.3em;
+.ast-add-statement-button--adding span {
+    position: absolute;
+    color: var(--color-replace);
 }
 
 /* nothing (yet) */

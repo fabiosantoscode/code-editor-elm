@@ -5,10 +5,9 @@ import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Machine.StandardLibrary exposing (StandardLibraryFunction)
+import Machine.StandardLibrary exposing (StandardLibraryFunction, standardLibraryFunctions)
 import Model exposing (..)
 import RenderEditor exposing (..)
-import Machine.StandardLibrary exposing (standardLibraryFunctions)
 
 
 
@@ -37,7 +36,7 @@ renderFunctionButton f =
         [ onClick (CommitChange asForm)
         , class "replace-function-button"
         ]
-        ([text f.name])
+        [ text f.name ]
 
 
 renderFunctionButtons : List StandardLibraryFunction -> Html Msg
@@ -54,29 +53,9 @@ renderReplaceUi { replacing } =
         Nothing ->
             []
 
-        Just { path, search, addition } ->
-            let
-                replaceText =
-                    if addition then
-                        "Add"
-
-                    else
-                        "Replace"
-            in
+        Just _ ->
             [ div [ class "ast-replace-ui" ]
-                [ text replaceText
-                , div [ class "ast-replace-path" ]
-                    [ text (String.join "." (List.map String.fromInt path)) ]
-                , div [ class "ast-replace-search" ]
-                    [ input
-                        [ class "ast-replace-search-input"
-                        , value search
-                        , onInput (InitiateReplace path)
-                        ]
-                        []
-                    ]
-                ],
-                renderFunctionButtons standardLibraryFunctions
+                [ renderFunctionButtons standardLibraryFunctions ]
             ]
 
 

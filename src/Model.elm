@@ -24,7 +24,7 @@ initialModel =
                                 ]
                             }
                   }
-                , { name = "form2"
+                , { name = "variable2"
                   , expression =
                         Form
                             { head = "func"
