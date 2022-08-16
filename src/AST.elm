@@ -180,9 +180,14 @@ generateVarName existingNames index =
         newName
 
 
-generateIdForPath : Path -> String -> String
-generateIdForPath path prefix =
+generateIdForPath : String -> Path -> String
+generateIdForPath prefix path =
     prefix ++ (path |> List.map String.fromInt |> String.join ".")
+
+
+generateIdForAdd : Path -> String
+generateIdForAdd =
+    generateIdForPath "add-statement-"
 
 
 isVariableVisibleFrom : List String -> Path -> String -> Bool

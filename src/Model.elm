@@ -1,6 +1,8 @@
 module Model exposing (..)
 
 import AST exposing (..)
+import Browser.Dom
+import Task
 
 
 type alias Model =
@@ -54,7 +56,31 @@ type Msg
     = InitiateAdd Path String
     | InitiateReplace Path String
     | CommitChange AST
+    | Focus (Result Browser.Dom.Error ())
     | Noop
+
+
+updateModel : Msg -> Model -> ( Model, Cmd Msg )
+updateModel msg model =
+    case msg of
+        Noop ->
+            ( model, Cmd.none )
+
+        Focus _ ->
+            -- Is it important to handle the focus error?
+            ( model, Cmd.none )
+
+        InitiateAdd path search ->
+            ( { model | replacing = makeReplacement path True search }
+            , Task.attempt Focus
+                (Browser.Dom.focus (generateIdForAdd path))
+            )
+
+        InitiateReplace path search ->
+            ( { model | replacing = makeReplacement path False search }, Cmd.none )
+
+        CommitChange newAst ->
+            ( applyAstMutation model newAst, Cmd.none )
 
 
 applyAstMutation : Model -> AST -> Model
@@ -80,22 +106,6 @@ applyAstMutation model ast =
 makeReplacement : Path -> Bool -> String -> Replacement
 makeReplacement path addition search =
     Just { path = path, search = search, addition = addition }
-
-
-applyMsg : Msg -> Model -> Model
-applyMsg msg model =
-    case msg of
-        Noop ->
-            model
-
-        InitiateAdd path search ->
-            { model | replacing = makeReplacement path True search }
-
-        InitiateReplace path search ->
-            { model | replacing = makeReplacement path False search }
-
-        CommitChange newAst ->
-            applyAstMutation model newAst
 
 
 ctxEnterPath : IterationContext -> Int -> IterationContext

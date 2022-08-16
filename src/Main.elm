@@ -16,9 +16,10 @@ import RenderEditor exposing (..)
 
 main : Program () Model Msg
 main =
-    Browser.sandbox
-        { init = initialModel
-        , update = applyMsg
+    Browser.element
+        { init = \_ -> ( initialModel, Cmd.none )
+        , update = updateModel
+        , subscriptions = \_ -> Sub.none
         , view = renderModel
         }
 

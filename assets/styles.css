@@ -99,34 +99,33 @@
 
 /* add button */
 
-.ast-add-statement-button {
-    align-self: stretch;
+.ast-add-statement-input {
+    width: 10em;
     display: flex;
     position: relative;
     padding: 0.4em;
     transition: var(--vertical-transition);
 }
 
-.ast-add-statement-button--clickable > span {
+.ast-add-statement-input--clickable > span {
     position: absolute;
     inset: 0.4em;
     background-color: transparent;
     transition: var(--vertical-transition);
 }
 
-.ast-add-statement-button--clickable:hover > span {
+.ast-add-statement-input--clickable:hover > span {
     inset: 0.3em;
     background-color: var(--color-replace);
 }
 
-.ast-add-statement-button--adding {
-    padding-bottom: 2em;
+.ast-add-statement-input--adding {
     margin-top: 1.5em;
     margin-bottom: 0.5em;
     overflow: hidden;
 }
 
-.ast-add-statement-button--adding span {
+.ast-add-statement-input--adding span {
     position: absolute;
     color: var(--color-replace);
 }

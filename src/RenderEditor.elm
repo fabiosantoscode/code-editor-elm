@@ -79,14 +79,15 @@ addStatementButton : IterationContext -> Html Msg
 addStatementButton ctx =
     let
         baseClass =
-            [ class "ast-button ast-add-statement-button" ]
+            [ class "ast-input ast-add-statement-input" ]
     in
     if ctxIsAddingPath ctx ctx.path then
         input
             (baseClass
-                ++ [ class "ast-add-statement-button--adding"
+                ++ [ class "ast-add-statement-input--adding"
                    , class "outline-replace"
                    , placeholder "Add statement"
+                   , id (generateIdForAdd ctx.path)
                    ]
             )
             []
@@ -94,7 +95,7 @@ addStatementButton ctx =
     else
         button
             (baseClass
-                ++ [ class "ast-add-statement-button--clickable"
+                ++ [ class "ast-add-statement-input--clickable"
                    , onClick (InitiateAdd ctx.path "")
                    ]
             )
