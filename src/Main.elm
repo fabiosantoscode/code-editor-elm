@@ -6,7 +6,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Model exposing (..)
-import RenderAST exposing (..)
+import RenderEditor exposing (..)
 
 
 

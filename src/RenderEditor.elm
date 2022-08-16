@@ -1,4 +1,4 @@
-module RenderAST exposing (..)
+module RenderEditor exposing (renderEditor)
 
 import AST exposing (..)
 import Html exposing (..)
@@ -25,7 +25,7 @@ addButton : IterationContext -> Html Msg
 addButton ctx =
     let
         attributes =
-            if ctxCurrentAddPath ctx == Just ctx.path then
+            if ctxIsAddingPath ctx ctx.path then
                 [ class "ast-button ast-add-button ast-add-button--adding" ]
 
             else
@@ -76,7 +76,7 @@ renderForm path form tail =
 
 beingReplacedClasses : IterationContext -> List String
 beingReplacedClasses ctx =
-    if ctxCurrentReplacePath ctx == Just ctx.path then
+    if ctxIsReplacingPath ctx ctx.path then
         [ "ast-replaceable", "ast-replaceable--being-replaced" ]
 
     else
@@ -100,6 +100,7 @@ classListFor ast =
 
         Incomplete ->
             [ "ast-incomplete" ]
+
 
 
 --- Bringing it all together
@@ -128,7 +129,8 @@ renderEditor model ctx ast =
             [ div
                 [ class className ]
                 (addButton (ctxEnterPath ctx (List.length p.assignments))
-                    :: flatMap renderWithVarName p.assignments)
+                    :: flatMap renderWithVarName p.assignments
+                )
             ]
 
         Form f ->

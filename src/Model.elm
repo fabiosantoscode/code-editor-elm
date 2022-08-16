@@ -114,27 +114,29 @@ ctxEnterPath context index =
     { context | path = context.path ++ [ index ] }
 
 
-ctxCurrentReplacePath : IterationContext -> Maybe Path
-ctxCurrentReplacePath context =
+ctxIsReplacingPath : IterationContext -> Path -> Bool
+ctxIsReplacingPath context path =
     context.replacing
-        |> Maybe.andThen
+        |> Maybe.map
             (\r ->
                 if r.addition == False then
-                    Just r.path
+                    r.path == path
 
                 else
-                    Nothing
+                    False
             )
+        |> Maybe.withDefault False
 
 
-ctxCurrentAddPath : IterationContext -> Maybe Path
-ctxCurrentAddPath context =
+ctxIsAddingPath : IterationContext -> Path -> Bool
+ctxIsAddingPath context path =
     context.replacing
-        |> Maybe.andThen
+        |> Maybe.map
             (\r ->
                 if r.addition then
-                    Just r.path
+                    r.path == path
 
                 else
-                    Nothing
+                    False
             )
+        |> Maybe.withDefault False
