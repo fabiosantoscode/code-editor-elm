@@ -19,9 +19,12 @@
     --color-number--clickable: #9845b9;
 
     --bg-color-form--depth-1: hsl(23, 12%, 87%);
-    --bg-color-form--depth-2: hsl(23, 12%, 66%);
-    --bg-color-form--depth-3: hsl(23, 12%, 57%);
-    --bg-color-cell: hsl(240, 100%, 90%);  /* Boxes to fill in */
+    --bg-color-form--depth-2: hsl(23, 12%, 76%);
+    --bg-color-form--depth-3: hsl(23, 12%, 66%);
+    --bg-color-form--depth-4: hsl(23, 12%, 60%);
+    --bg-color-form--depth-5: hsl(23, 12%, 54%);
+    --bg-color-form--depth-6: hsl(23, 12%, 49%);
+    --bg-color-cell: hsl(240, 49%, 88%);  /* Boxes to fill in */
 
     --inline-transition: all 80ms ease;
     --vertical-transition: all 300ms ease;
@@ -44,6 +47,11 @@
 
 .color-var-name {
     color: var(--color-var-name);
+}
+
+.outline-replace {
+    outline: 4px solid var(--color-replace);
+    border-radius: 0.25rem;
 }
 
 .layout-horizontal {
@@ -96,29 +104,20 @@
     inset: 0.3em;
 }
 
-/* when being replaced */
-
-.ast-replaceable--being-replaced {
-    color: var(--color-replace);
-}
-
 /* nothing (yet) */
 
 .ast-incomplete {
-    position: relative;
-    width: 1.1em;
+    width: 1.8em;
     transition: var(--inline-transition);
 }
 
 .ast-incomplete:before {
     content: '';
-    display: block;
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: var(--form-child-vertical-padding);
-    bottom: var(--form-child-vertical-padding);
     background: var(--bg-color-cell);
+    width: 100%;
+    height: 100%;
+    display: inline-block;
+    border-radius: 0.25rem;
 }
 
 .ast-incomplete.ast-replaceable--being-replaced:before {
@@ -126,7 +125,7 @@
 }
 
 .ast-incomplete.ast-replaceable--being-replaced {
-    width: 2em;
+    outline: 0 none;
 }
 
 /* variable names */
@@ -159,16 +158,24 @@
     border-radius: 5px;
 }
 
-.ast-replaceable--being-replaced {
-    outline: 4px solid var(--color-replace);
-}
-
 .ast-form--depth-2 {
     background-color: var(--bg-color-form--depth-2);
 }
 
 .ast-form--depth-3 {
     background-color: var(--bg-color-form--depth-3);
+}
+
+.ast-form--depth-4 {
+    background-color: var(--bg-color-form--depth-4);
+}
+
+.ast-form--depth-5 {
+    background-color: var(--bg-color-form--depth-5);
+}
+
+.ast-form--depth-6 {
+    background-color: var(--bg-color-form--depth-6);
 }
 
 .ast-form > * {
@@ -182,6 +189,10 @@
     padding-bottom: 0;
     margin-top: var(--form-child-vertical-padding);
     margin-bottom: var(--form-child-vertical-padding);
+}
+
+.ast-form + .ast-form {
+    margin-left: var(--form-child-padding);
 }
 
 .ast-form > .ast-form__head {

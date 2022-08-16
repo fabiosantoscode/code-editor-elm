@@ -2,8 +2,8 @@ module Machine.StandardLibrary exposing (..)
 
 
 type FunctionDisplayType
-    = BinOp
-    | Prefix
+    = DispOperator
+    | DispIf
 
 
 type alias StandardLibraryFunction =
@@ -15,23 +15,24 @@ type alias StandardLibraryFunction =
 
 standardLibraryFunctions : List StandardLibraryFunction
 standardLibraryFunctions =
-    [ { display = BinOp, name = "+", parameters = [ "Left", "Right" ] }
-    , { display = BinOp, name = "-", parameters = [ "Left", "Right" ] }
-    , { display = BinOp, name = "*", parameters = [ "Left", "Right" ] }
-    , { display = BinOp, name = "/", parameters = [ "Left", "Right" ] }
-    , { display = BinOp, name = "==", parameters = [ "Left", "Right" ] }
-    , { display = BinOp, name = "≠", parameters = [ "Left", "Right" ] }
-    , { display = BinOp, name = "<", parameters = [ "Left", "Right" ] }
-    , { display = BinOp, name = ">", parameters = [ "Left", "Right" ] }
-    , { display = BinOp, name = "≤", parameters = [ "Left", "Right" ] }
-    , { display = BinOp, name = "≥", parameters = [ "Left", "Right" ] }
-    , { display = BinOp, name = "And", parameters = [ "Left", "Right" ] }
-    , { display = BinOp, name = "Or", parameters = [ "Left", "Right" ] }
-    , { display = Prefix, name = "Not", parameters = [ "Left" ] }
-    , { display = Prefix, name = "If", parameters = [ "Condition", "True", "False" ] }
+    [ { display = DispOperator, name = "+", parameters = [ "Left", "Right" ] }
+    , { display = DispOperator, name = "-", parameters = [ "Left", "Right" ] }
+    , { display = DispOperator, name = "×", parameters = [ "Left", "Right" ] }
+    , { display = DispOperator, name = "÷", parameters = [ "Left", "Right" ] }
+    , { display = DispOperator, name = "==", parameters = [ "Left", "Right" ] }
+    , { display = DispOperator, name = "≠", parameters = [ "Left", "Right" ] }
+    , { display = DispOperator, name = "<", parameters = [ "Left", "Right" ] }
+    , { display = DispOperator, name = ">", parameters = [ "Left", "Right" ] }
+    , { display = DispOperator, name = "≤", parameters = [ "Left", "Right" ] }
+    , { display = DispOperator, name = "≥", parameters = [ "Left", "Right" ] }
+    , { display = DispOperator, name = "And", parameters = [ "Left", "Right" ] }
+    , { display = DispOperator, name = "Or", parameters = [ "Left", "Right" ] }
+    , { display = DispOperator, name = "Not", parameters = [ "Left" ] }
+    , { display = DispIf, name = "If", parameters = [ "Condition", "True", "False" ] }
     ]
+
 
 getStandardLibFunction : String -> Maybe StandardLibraryFunction
 getStandardLibFunction name =
     List.filter (\x -> x.name == name) standardLibraryFunctions
-      |> List.head
+        |> List.head

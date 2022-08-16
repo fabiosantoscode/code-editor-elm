@@ -94,7 +94,7 @@ renderForm path form tailHtml =
     getStandardLibFunction form.head
         |> Maybe.andThen
             (\f ->
-                if f.display == BinOp then
+                if f.display == DispOperator then
                     Maybe.map (renderBinOpForm path form.head) (list2ToTuple tailHtml)
 
                 else
@@ -106,7 +106,7 @@ renderForm path form tailHtml =
 beingReplacedClasses : IterationContext -> List String
 beingReplacedClasses ctx =
     if ctxIsReplacingPath ctx ctx.path then
-        [ "ast-replaceable", "ast-replaceable--being-replaced" ]
+        [ "ast-replaceable", "ast-replaceable--being-replaced", "outline-replace" ]
 
     else
         [ "ast-replaceable" ]
@@ -153,7 +153,7 @@ renderEditor model ctx ast =
                     \index { expression, name } ->
                         renderClickableVarName model varNames name
                             :: renderEditor model (ctxEnterPath ctx index) expression
-                            ++ [ addStatementButton (ctxEnterPath ctx (index+1)) ]
+                            ++ [ addStatementButton (ctxEnterPath ctx (index + 1)) ]
             in
             [ div
                 [ class className ]
