@@ -9,12 +9,11 @@
     font-size: 2rem;
     line-height: 1;
 
-    --color-regular: #111;
     --color-highlight: #111;
-    --color-replace: hsl(240, 54%, 38%);
+    --color-replace: hsl(240, 51%, 38%);
 
-    --color-var-name: hsl(205, 69%, 49%);
-    --color-var-name--clickable: hsl(205, 69%, 49%);
+    --color-var-name: hsl(0, 0%, 0%);
+    --color-var-name--clickable: hsl(240, 55%, 45%);
 
     --color-number: #5c0080;
     --color-number--clickable: #9845b9;
@@ -68,7 +67,7 @@
 
 /* add button */
 
-.ast-add-button {
+.ast-add-statement-button {
     align-self: stretch;
     display: flex;
     position: relative;
@@ -76,24 +75,23 @@
     transition: var(--vertical-transition);
 }
 
-.ast-add-button > span {
+.ast-add-statement-button > span {
     position: absolute;
     inset: 0.4em;
     background-color: transparent;
     transition: var(--inline-transition);
 }
 
-.ast-add-button--clickable:hover > span {
+.ast-add-statement-button--clickable:hover > span {
     inset: 0.3em;
     background-color: var(--color-highlight);
 }
 
-.ast-add-button--adding {
+.ast-add-statement-button--adding {
     color: var(--color-replace);
-    --var-color-regular: var(--color-replace);
 }
 
-.ast-add-button--adding > span {
+.ast-add-statement-button--adding > span {
     background-color: var(--color-replace);
     inset: 0.3em;
 }
@@ -102,7 +100,6 @@
 
 .ast-replaceable--being-replaced {
     color: var(--color-replace);
-    --var-color-regular: var(--color-replace);
 }
 
 /* nothing (yet) */
@@ -135,13 +132,12 @@
 /* variable names */
 
 .ast-var-name {
-    margin-left: -0.5em;
+    font-size: 1.2em;
 }
 
 .ast-var-name--clickable {
     color: var(--color-var-name--clickable);
     text-decoration: underline;
-    font-weight: bold;
     cursor: pointer;
 }
 
@@ -163,7 +159,7 @@
     border-radius: 5px;
 }
 
-.ast-form.ast-replaceable--being-replaced {
+.ast-replaceable--being-replaced {
     outline: 4px solid var(--color-replace);
 }
 

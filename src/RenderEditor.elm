@@ -4,6 +4,7 @@ import AST exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
+import Machine.StandardLibrary exposing (FunctionDisplayType(..), getStandardLibFunction)
 import Model exposing (..)
 import Utils exposing (..)
 
@@ -21,17 +22,22 @@ replaceButton path className astHtml =
         [ astHtml ]
 
 
-addButton : IterationContext -> Html Msg
-addButton ctx =
+addStatementButton : IterationContext -> Html Msg
+addStatementButton ctx =
     let
+        baseClass =
+            [ class "ast-button ast-add-statement-button" ]
+
         attributes =
             if ctxIsAddingPath ctx ctx.path then
-                [ class "ast-button ast-add-button ast-add-button--adding" ]
+                baseClass
+                    ++ [ class "ast-add-statement-button--adding" ]
 
             else
-                [ class "ast-button ast-add-button ast-add-button--clickable"
-                , onClick (InitiateAdd ctx.path "")
-                ]
+                baseClass
+                    ++ [ class "ast-add-statement-button--clickable"
+                       , onClick (InitiateAdd ctx.path "")
+                       ]
     in
     button attributes [ span [] [] ]
 
@@ -62,8 +68,8 @@ renderClickableVarName model varNames varName =
 --- Rendering AST nodes
 
 
-renderForm : Path -> RForm -> List (Html Msg) -> List (Html Msg)
-renderForm path form tail =
+renderPrefixForm : Path -> RForm -> List (Html Msg) -> List (Html Msg)
+renderPrefixForm path form tailHtml =
     let
         btn =
             replaceButton path "ast-form__head"
@@ -71,7 +77,30 @@ renderForm path form tail =
         endBtn =
             replaceButton path "ast-form__endparen"
     in
-    btn (text (form.head ++ "(")) :: tail ++ [ endBtn (text ")") ]
+    btn (text (form.head ++ "(")) :: tailHtml ++ [ endBtn (text ")") ]
+
+
+renderBinOpForm : Path -> String -> ( Html Msg, Html Msg ) -> List (Html Msg)
+renderBinOpForm path opName ( left, right ) =
+    let
+        btn =
+            replaceButton path "ast-form__op"
+    in
+    [ btn (text opName), left, right ]
+
+
+renderForm : Path -> RForm -> List (Html Msg) -> List (Html Msg)
+renderForm path form tailHtml =
+    getStandardLibFunction form.head
+        |> Maybe.andThen
+            (\f ->
+                if f.display == BinOp then
+                    Maybe.map (renderBinOpForm path form.head) (list2ToTuple tailHtml)
+
+                else
+                    Nothing
+            )
+        |> Maybe.withDefault (renderPrefixForm path form tailHtml)
 
 
 beingReplacedClasses : IterationContext -> List String
@@ -124,11 +153,11 @@ renderEditor model ctx ast =
                     \index { expression, name } ->
                         renderClickableVarName model varNames name
                             :: renderEditor model (ctxEnterPath ctx index) expression
-                            ++ [ addButton (ctxEnterPath ctx index) ]
+                            ++ [ addStatementButton (ctxEnterPath ctx (index+1)) ]
             in
             [ div
                 [ class className ]
-                (addButton (ctxEnterPath ctx (List.length p.assignments))
+                (addStatementButton (ctxEnterPath ctx 0)
                     :: flatMap renderWithVarName p.assignments
                 )
             ]

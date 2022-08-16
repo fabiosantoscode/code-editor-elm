@@ -11,3 +11,13 @@ flatMap f xs =
 setFlatMap : (a -> Set comparable) -> List a -> Set comparable
 setFlatMap fn inp =
     List.map fn inp |> List.foldr Set.union Set.empty
+
+
+list2ToTuple : List a -> Maybe ( a, a )
+list2ToTuple list =
+    case list of
+        [ first, second ] ->
+            Just ( first, second )
+
+        _ ->
+            Nothing

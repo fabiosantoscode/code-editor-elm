@@ -14,14 +14,13 @@ initialModel =
     { program =
         Block
             { assignments =
-                [ { name = "form1"
+                [ { name = "addedNumbers"
                   , expression =
                         Form
-                            { head = "func"
+                            { head = "+"
                             , tail =
                                 [ Number { value = 1 }
                                 , Number { value = 2 }
-                                , Number { value = 3 }
                                 ]
                             }
                   }
@@ -30,21 +29,11 @@ initialModel =
                         Form
                             { head = "func"
                             , tail =
-                                [ Number { value = 2 }
-                                , Form
-                                    { head = "func"
+                                [ Form
+                                    { head = "=="
                                     , tail =
-                                        [ Number { value = 1 }
-                                        , Number { value = 2 }
-                                        , Form
-                                            { head = "func"
-                                            , tail =
-                                                [ Number { value = 1 }
-                                                , Number { value = 2 }
-                                                , Number { value = 3 }
-                                                , Incomplete
-                                                ]
-                                            }
+                                        [ Reference { name = "addedNumbers" }
+                                        , Number { value = 3 }
                                         ]
                                     }
                                 ]
