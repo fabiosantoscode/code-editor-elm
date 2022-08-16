@@ -127,8 +127,8 @@ renderEditor model ctx ast =
             in
             [ div
                 [ class className ]
-                (flatMap renderWithVarName p.assignments
-                    ++ [ addButton (ctxEnterPath ctx (List.length p.assignments)) ])
+                (addButton (ctxEnterPath ctx (List.length p.assignments))
+                    :: flatMap renderWithVarName p.assignments)
             ]
 
         Form f ->
