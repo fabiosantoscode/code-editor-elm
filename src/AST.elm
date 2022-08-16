@@ -180,6 +180,11 @@ generateVarName existingNames index =
         newName
 
 
+generateIdForPath : Path -> String -> String
+generateIdForPath path prefix =
+    prefix ++ (path |> List.map String.fromInt |> String.join ".")
+
+
 isVariableVisibleFrom : List String -> Path -> String -> Bool
 isVariableVisibleFrom varNames path varName =
     let

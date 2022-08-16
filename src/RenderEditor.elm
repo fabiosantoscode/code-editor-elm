@@ -3,7 +3,7 @@ module RenderEditor exposing (renderEditor)
 import AST exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onClick)
+import Html.Events exposing (onClick, onInput)
 import Machine.StandardLibrary exposing (FunctionDisplayType(..), getStandardLibFunction)
 import Model exposing (..)
 import Utils exposing (..)
@@ -22,32 +22,83 @@ replaceButton path className astHtml =
         [ astHtml ]
 
 
+replaceInput : IterationContext -> String -> String -> Html Msg
+replaceInput { path, replacing } className contents =
+    let
+        replacingMeWith =
+            replacing
+                |> Maybe.andThen
+                    (\r ->
+                        if r.path == path then
+                            Just r
+
+                        else
+                            Nothing
+                    )
+
+        inputLength =
+            [ replacingMeWith
+                |> Maybe.map (\r -> r.search)
+                |> Maybe.withDefault ""
+            , contents
+            , "_"
+            ]
+                |> List.foldr (\s acc -> Basics.max acc (String.length s)) 0
+
+        styles =
+            [ class ("ast-input margin-y-form-child " ++ className)
+            , style "width" ((inputLength |> String.fromInt) ++ "ch")
+            ]
+    in
+    case replacingMeWith of
+        Just { search } ->
+            input
+                (styles
+                    ++ [ onInput (InitiateReplace path)
+                       , if search == "" then
+                            placeholder contents
+
+                         else
+                            value search
+                       ]
+                )
+                []
+
+        Nothing ->
+            input
+                (styles
+                    ++ [ onClick (InitiateReplace path "")
+                       , onInput (InitiateReplace path)
+                       , value contents
+                       ]
+                )
+                []
+
+
 addStatementButton : IterationContext -> Html Msg
 addStatementButton ctx =
     let
         baseClass =
             [ class "ast-button ast-add-statement-button" ]
-
-        attributes =
-            if ctxIsAddingPath ctx ctx.path then
-                button
-                    (baseClass
-                        ++ [ class "ast-add-statement-button--adding"
-                           , class "outline-replace"
-                           ]
-                    )
-                    [ span [] [text "Add statement"] ]
-
-            else
-                button
-                    (baseClass
-                        ++ [ class "ast-add-statement-button--clickable"
-                           , onClick (InitiateAdd ctx.path "")
-                           ]
-                    )
-                    [ span [] [] ]
     in
-    attributes
+    if ctxIsAddingPath ctx ctx.path then
+        input
+            (baseClass
+                ++ [ class "ast-add-statement-button--adding"
+                   , class "outline-replace"
+                   , placeholder "Add statement"
+                   ]
+            )
+            []
+
+    else
+        button
+            (baseClass
+                ++ [ class "ast-add-statement-button--clickable"
+                   , onClick (InitiateAdd ctx.path "")
+                   ]
+            )
+            [ span [] [] ]
 
 
 varNameIsClickable : Model -> List String -> String -> Bool
@@ -116,6 +167,9 @@ beingReplacedClasses ctx =
     if ctxIsReplacingPath ctx ctx.path then
         [ "ast-replaceable", "ast-replaceable--being-replaced", "outline-replace" ]
 
+    else if ctx.replacing == Nothing then
+        [ "ast-replaceable", "hover-outline-replace" ]
+
     else
         [ "ast-replaceable" ]
 
@@ -127,7 +181,7 @@ classListFor ast =
             [ "ast-program", "layout-vertical" ]
 
         Form _ ->
-            [ "ast-form", "layout-horizontal" ]
+            [ "ast-form", "layout-horizontal", "reveal-bg-behind" ]
 
         Number _ ->
             [ "ast-number" ]
@@ -136,7 +190,7 @@ classListFor ast =
             [ "ast-reference", "color-var-name" ]
 
         Incomplete ->
-            [ "ast-incomplete" ]
+            [ "ast-incomplete", "reveal-bg-behind" ]
 
 
 
@@ -187,10 +241,10 @@ renderEditor model ctx ast =
             ]
 
         Number { value } ->
-            [ replaceButton ctx.path className (text (String.fromInt value)) ]
+            [ replaceInput ctx className (String.fromInt value) ]
 
         Reference { name } ->
-            [ replaceButton ctx.path className (text name) ]
+            [ replaceInput ctx className name ]
 
         Incomplete ->
-            [ replaceButton ctx.path className (text "") ]
+            [ replaceInput ctx className "" ]
