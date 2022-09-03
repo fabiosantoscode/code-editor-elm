@@ -75,30 +75,32 @@ replaceInput { path, replacing } className contents =
                 []
 
 
-addStatementButton : IterationContext -> Html Msg
-addStatementButton ctx =
-    let
-        baseClass =
-            [ class "ast-input ast-add-statement-input" ]
-    in
+addStatementButton : IterationContext -> Bool -> Html Msg
+addStatementButton ctx isLast =
     if ctxIsAddingPath ctx ctx.path then
         input
-            (baseClass
-                ++ [ class "ast-add-statement-input--adding"
-                   , class "outline-replace"
-                   , placeholder "Add statement"
-                   , id (generateIdForAdd ctx.path)
-                   ]
-            )
+            [ class "ast-input ast-add-statement-input"
+            , class "ast-add-statement-input--adding"
+            , class "outline-replace"
+            , placeholder "Add statement"
+            , id (generateIdForAdd ctx.path)
+            ]
             []
+
+    else if isLast then
+        button
+            [ class "ast-button ast-add-statement-input"
+            , class "ast-add-statement-input--clickable-last"
+            , onClick (InitiateAdd ctx.path "")
+            ]
+            [ text "+" ]
 
     else
         button
-            (baseClass
-                ++ [ class "ast-add-statement-input--clickable"
-                   , onClick (InitiateAdd ctx.path "")
-                   ]
-            )
+            [ class "ast-button ast-add-statement-input"
+            , class "ast-add-statement-input--clickable"
+            , onClick (InitiateAdd ctx.path "")
+            ]
             [ span [] [] ]
 
 
@@ -128,8 +130,8 @@ renderClickableVarName model varNames varName =
 --- Rendering AST nodes
 
 
-renderPrefixForm : Path -> RForm -> List (Html Msg) -> List (Html Msg)
-renderPrefixForm path form tailHtml =
+renderPrefixForm : Path -> String -> List (Html Msg) -> List (Html Msg)
+renderPrefixForm path headString tailHtml =
     let
         btn =
             replaceButton path "ast-form__head"
@@ -137,7 +139,7 @@ renderPrefixForm path form tailHtml =
         endBtn =
             replaceButton path "ast-form__endparen"
     in
-    btn (text (form.head ++ "(")) :: tailHtml ++ [ endBtn (text ")") ]
+    btn (text (headString ++ "(")) :: tailHtml ++ [ endBtn (text ")") ]
 
 
 renderBinOpForm : Path -> String -> ( Html Msg, Html Msg ) -> List (Html Msg)
@@ -160,7 +162,7 @@ renderForm path form tailHtml =
                 else
                     Nothing
             )
-        |> Maybe.withDefault (renderPrefixForm path form tailHtml)
+        |> Maybe.withDefault (renderPrefixForm path form.head tailHtml)
 
 
 beingReplacedClasses : IterationContext -> List String
@@ -213,15 +215,15 @@ renderEditor model ctx ast =
                     p.assignments |> List.map (\a -> a.name)
 
                 renderWithVarName =
-                    \index { expression, name } ->
+                    \len i { expression, name } ->
                         renderClickableVarName model varNames name
-                            :: renderEditor model (ctxEnterPath ctx index) expression
-                            ++ [ addStatementButton (ctxEnterPath ctx (index + 1)) ]
+                            :: renderEditor model (ctxEnterPath ctx i) expression
+                            ++ [ addStatementButton (ctxEnterPath ctx (i + 1)) (i == len - 1) ]
             in
             [ div
                 [ class className ]
-                (addStatementButton (ctxEnterPath ctx 0)
-                    :: flatMap renderWithVarName p.assignments
+                (addStatementButton (ctxEnterPath ctx 0) False
+                    :: flatMap (renderWithVarName (List.length p.assignments)) p.assignments
                 )
             ]
 

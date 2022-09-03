@@ -17,7 +17,7 @@ standardLibraryFunctions : List StandardLibraryFunction
 standardLibraryFunctions =
     [ { display = DispOperator, name = "+", parameters = [ "Left", "Right" ] }
     , { display = DispOperator, name = "-", parameters = [ "Left", "Right" ] }
-    , { display = DispOperator, name = "×", parameters = [ "Left", "Right" ] }
+    , { display = DispOperator, name = "\u{00D7}", parameters = [ "Left", "Right" ] }
     , { display = DispOperator, name = "÷", parameters = [ "Left", "Right" ] }
     , { display = DispOperator, name = "==", parameters = [ "Left", "Right" ] }
     , { display = DispOperator, name = "≠", parameters = [ "Left", "Right" ] }
