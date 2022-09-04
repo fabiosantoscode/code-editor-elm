@@ -5,6 +5,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput)
 import Html.Lazy exposing (lazy2)
+import Machine.Parse exposing (tryParseAtom, tryParseAtomToString)
 import Machine.StandardLibrary exposing (FunctionDisplayType(..), getStandardLibFunction)
 import Model exposing (..)
 import RenderSuggestions exposing (renderSuggestions)
@@ -29,28 +30,29 @@ renderEditor model ctx ast =
 
         Form f ->
             let
-                childRender =
-                    \index child ->
-                        renderEditor model (ctxEnterPath ctx index) child
+                childRender index child =
+                    renderEditor model (ctxEnterPath ctx index) child
             in
-            [ div
-                [ class className
-                , class ("ast-form--depth-" ++ String.fromInt (List.length ctx.path))
-                ]
-                (renderForm ctx.path
-                    f
-                    (flatMap childRender f.tail)
+            [ replaceableNode ctx
+                (div
+                    [ class className
+                    , class ("ast-form--depth-" ++ String.fromInt (List.length ctx.path))
+                    ]
+                    (renderForm ctx.path
+                        f
+                        (flatMap childRender f.tail)
+                    )
                 )
             ]
 
         Number { value } ->
-            [ replaceInput ctx className (String.fromInt value) ]
+            [ replaceableLeafNode ctx className (String.fromInt value) ]
 
         Reference { name } ->
-            [ replaceInput ctx className name ]
+            [ replaceableLeafNode ctx className name ]
 
         Incomplete ->
-            [ replaceInput ctx className "" ]
+            [ replaceableLeafNode ctx className "" ]
 
 
 classListFor : AST -> List String
@@ -66,7 +68,7 @@ classListFor ast =
             [ "ast-number" ]
 
         Reference _ ->
-            [ "ast-reference", "color-var-name" ]
+            [ "ast-reference" ]
 
         Incomplete ->
             [ "ast-incomplete", "reveal-bg-behind" ]
@@ -92,7 +94,9 @@ renderBlock model ctx { assignments } =
 
         renderWithVarName i { expression, name } =
             div []
-                (renderClickableVarName model varNames name
+                (button
+                    [ class "ast-button color-var-name ast-var-name" ]
+                    [ text (name ++ ":") ]
                     :: suggestions i (renderEditor model (enter i) expression)
                     ++ addWidget (i + 1)
                 )
@@ -158,57 +162,64 @@ replaceButton path className astHtml =
         [ astHtml ]
 
 
-replaceInput : IterationContext -> String -> String -> Html Msg
-replaceInput { path, replacing } className contents =
-    let
-        replacingMeWith =
-            replacing
-                |> Maybe.andThen
-                    (\r ->
-                        if r.path == path then
-                            Just r
+userIsReplacing : IterationContext -> Maybe Replacement
+userIsReplacing ctx =
+    ctx.replacing
+        |> Maybe.andThen
+            (\r ->
+                if r.path == ctx.path && r.search /= "" then
+                    Just r
 
-                        else
-                            Nothing
-                    )
+                else
+                    Nothing
+            )
 
-        inputLength =
-            [ replacingMeWith
-                |> Maybe.map .search
-                |> Maybe.withDefault ""
-            , contents
-            , "_"
-            ]
-                |> List.foldr (\s acc -> Basics.max acc (String.length s)) 0
 
-        styles =
-            [ class ("ast-input margin-y-form-child " ++ className)
-            , style "width" ((inputLength |> String.fromInt) ++ "ch")
-            ]
-    in
-    case replacingMeWith of
-        Just { search } ->
-            input
-                (styles
-                    ++ [ onInput (InitiateReplace path)
-                       , if search == "" then
-                            placeholder contents
+replaceableNode : IterationContext -> Html Msg -> Html Msg
+replaceableNode ctx contents =
+    userIsReplacing ctx
+        |> Maybe.map (nodeReplacementPreview "")
+        |> Maybe.withDefault contents
 
-                         else
-                            value search
-                       ]
-                )
-                []
+
+replaceableLeafNode : IterationContext -> String -> String -> Html Msg
+replaceableLeafNode ctx className contents =
+    case userIsReplacing ctx of
+        Just r ->
+            nodeReplacementPreview className r
 
         Nothing ->
-            input
-                (styles
-                    ++ [ onClick (InitiateReplace path "")
-                       , onInput (InitiateReplace path)
-                       , value contents
-                       ]
-                )
-                []
+            autoWidthButton
+                [ class "ast-input margin-y-form-child"
+                , class className
+                , onClick (InitiateReplace ctx.path "")
+                ]
+                contents
+
+
+nodeReplacementPreview : String -> Replacement -> Html Msg
+nodeReplacementPreview className replacement =
+    let
+        ( validityClassName, textualPreview ) =
+            tryParseAtomToString replacement.search
+                |> Maybe.map (\ss -> ( "ast-color-valid-replacement", ss ))
+                |> Maybe.withDefault ( "ast-color-invalid-replacement", "" )
+    in
+    autoWidthButton
+        [ class "ast-input margin-y-form-child"
+        , class className
+        , class validityClassName
+        ]
+        textualPreview
+
+
+autoWidthButton : List (Attribute Msg) -> String -> Html Msg
+autoWidthButton attributes string =
+    let
+        w =
+            string |> String.length |> String.fromInt
+    in
+    button (style "width" (w ++ "ch") :: attributes) [ text string ]
 
 
 addStatementButton : IterationContext -> Bool -> Html Msg
@@ -237,25 +248,3 @@ addStatementButton ctx isLast =
             , onClick (InitiateAdd ctx.path "")
             ]
             [ span [] [] ]
-
-
-varNameIsClickable : Model -> List String -> String -> Bool
-varNameIsClickable model varNames varName =
-    model.replacing
-        |> Maybe.map (\r -> isVariableVisibleFrom varNames r.path varName)
-        |> Maybe.withDefault False
-
-
-renderClickableVarName : Model -> List String -> String -> Html Msg
-renderClickableVarName model varNames varName =
-    let
-        attributes =
-            if varNameIsClickable model varNames varName then
-                [ class "ast-button color-var-name ast-var-name ast-var-name--clickable"
-                , onClick (CommitChange (Reference { name = varName }))
-                ]
-
-            else
-                [ class "ast-button color-var-name ast-var-name" ]
-    in
-    button attributes [ text (varName ++ ":") ]

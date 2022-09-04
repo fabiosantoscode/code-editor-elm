@@ -2,7 +2,7 @@ module Model exposing (..)
 
 import AST exposing (..)
 import Browser.Dom
-import Machine.Parse exposing (tryParseAtom, tryParseAtomAst)
+import Machine.Parse exposing (tryParseAtomAst)
 import Task
 
 
@@ -83,15 +83,17 @@ updateModel msg model =
             setReplacement model path False search
 
         UpdateSearch newSearch ->
-            case model.replacing of
-                Just r ->
-                    noCmd { model | replacing = Just { r | search = newSearch } }
-
-                Nothing ->
-                    noCmd model
+            noCmd (setReplacementSearch model newSearch)
 
         CommitChange newAst ->
             noCmd { model | program = applyAstMutation model newAst, replacing = Nothing }
+
+
+setReplacementSearch : Model -> String -> Model
+setReplacementSearch model newSearch =
+    { model
+        | replacing = Maybe.map (\r -> { r | search = newSearch }) model.replacing
+    }
 
 
 

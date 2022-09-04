@@ -34,6 +34,16 @@ tryParseAtomAst string =
             Nothing
 
 
+tryParseAtomToString : String -> Maybe String
+tryParseAtomToString string =
+    case tryParseAtom string of
+        ParsedNumber n ->
+            Just (String.fromInt n)
+
+        _ ->
+            Nothing
+
+
 isParseError : ParseResult -> Bool
 isParseError r =
     case r of

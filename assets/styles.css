@@ -55,6 +55,15 @@
     border: 0 none;
     padding: 0;
     vertical-align: middle;
+    box-sizing: content-box;
+}
+
+.ast-color-valid-replacement {
+    color: var(--color-replace);
+}
+
+.ast-color-invalid-replacement {
+    color: red;
 }
 
 .ast-form > .margin-y-form-child {

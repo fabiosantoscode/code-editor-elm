@@ -20,6 +20,7 @@
     outline: 3px solid var(--color-replace);
     border-radius: 0.2ch;
     height: 6em;
+    background: white;
 }
 
 .ast-suggestions__root::before {
