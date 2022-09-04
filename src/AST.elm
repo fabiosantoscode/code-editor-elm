@@ -1,5 +1,6 @@
 module AST exposing (..)
 
+import Json.Decode exposing (bool)
 import Set exposing (Set)
 import Utils exposing (..)
 
@@ -31,7 +32,7 @@ type ASTTransformation
 
 type alias IterationContext =
     { path : Path
-    , replacing : Replacement
+    , replacing : Maybe Replacement
     }
 
 
@@ -40,7 +41,7 @@ type alias Path =
 
 
 type alias Replacement =
-    Maybe { path : Path, search : String, addition : Bool }
+    { path : Path, search : String, addition : Bool }
 
 
 getTransAddedNode : ASTTransformation -> AST
@@ -151,6 +152,58 @@ mutateTargetChildInner path transformer ast =
                     )
                     ast
                 )
+
+
+
+-- Make sure {path} addresses an available path
+
+
+truncatePathToAstInner : Bool -> Path -> AST -> Path
+truncatePathToAstInner isAdd path ast =
+    case path of
+        [] ->
+            []
+
+        [ leafIndex ] ->
+            let
+                maxIndex =
+                    List.length (getAstChildren ast)
+                        -- leafIndex can be == list length to add at last
+                        + bool2Int isAdd
+            in
+            if leafIndex > maxIndex then
+                []
+
+            else
+                [ leafIndex ]
+
+        index :: rest ->
+            listAt (getAstChildren ast) index
+                |> Maybe.map (\e -> index :: truncatePathToAstInner isAdd rest e)
+                |> Maybe.withDefault []
+
+
+truncatePathToAst : Bool -> Path -> AST -> Maybe Path
+truncatePathToAst isAdd path ast =
+    case truncatePathToAstInner isAdd path ast of
+        [] ->
+            Nothing
+
+        x ->
+            Just x
+
+
+getAstChildren : AST -> List AST
+getAstChildren ast =
+    case ast of
+        Block { assignments } ->
+            assignments |> List.map (\a -> a.expression)
+
+        Form { tail } ->
+            tail
+
+        _ ->
+            []
 
 
 mutateTargetChild : List Int -> ASTTransformation -> AST -> AST
@@ -270,3 +323,8 @@ commitASTTransformation path transformation ast =
         transformation
         ast
         |> ensureVariableNames
+
+
+ctxEnterPath : IterationContext -> Int -> IterationContext
+ctxEnterPath context index =
+    { context | path = context.path ++ [ index ] }

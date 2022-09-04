@@ -1,3 +1,4 @@
+@import url(./suggestions.css);
 
 /* Resets */
 .ast-program {
@@ -111,6 +112,7 @@
 .ast-add-statement-input--clickable > span {
     position: absolute;
     inset: 0.4em;
+    cursor: row-resize;
     background-color: transparent;
     transition: var(--vertical-transition);
 }
@@ -123,7 +125,6 @@
 .ast-add-statement-input--clickable-last {
     background-color: transparent;
     transition: var(--vertical-transition);
-    width: 2em;
     cursor: pointer;
 }
 
@@ -132,8 +133,8 @@
 }
 
 .ast-add-statement-input--adding {
-    margin-top: 1.5em;
-    margin-bottom: 0.5em;
+    margin-top: 0.1em;
+    margin-bottom: 0.1em;
     overflow: hidden;
 }
 

@@ -1,0 +1,68 @@
+
+/* Wrappers */
+.ast-suggestions__container {
+    display: flex;
+}
+
+.ast-suggestions__statement {
+    flex: 1 0 30ch;
+}
+
+.ast-suggestions__wrapper {
+    margin-left: auto;
+    height: 0;
+    position: relative;
+    flex: 1 0 15ch;
+}
+
+.ast-suggestions__root {
+    padding: 0.3ch 0.5ch;
+    outline: 3px solid var(--color-replace);
+    border-radius: 0.2ch;
+    height: 6em;
+}
+
+.ast-suggestions__root::before {
+    content: '';
+    display: block;
+    position: absolute;
+
+    width: 0;
+    height: 0;
+
+    align-self: center;
+    right: 100%;
+    top: 0.8em;
+
+    border-style: solid;
+    border-width: 10px 10px 10px 0;
+    border-color: transparent var(--color-replace) transparent transparent;
+}
+
+.replace-function-buttons {
+    display: block;
+    margin: 0 -0.2em;
+}
+
+.replace-function-button {
+    display: inline-block;
+    width: 3em;
+    height: 2em;
+    margin: 0 0.2em;
+}
+
+.height-explain {
+    font-size: 0.4em;
+    height: 1em;
+    margin-top: 0.2em;
+}
+
+.text-explain {
+    font-family: sans-serif;
+    color: green;
+}
+
+.text-error {
+    font-family: sans-serif;
+    color: red;
+}

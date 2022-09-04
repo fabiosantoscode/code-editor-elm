@@ -2,12 +2,13 @@ module Model exposing (..)
 
 import AST exposing (..)
 import Browser.Dom
+import Machine.Parse exposing (tryParseAtom, tryParseAtomAst)
 import Task
 
 
 type alias Model =
     { program : AST
-    , replacing : Replacement
+    , replacing : Maybe Replacement
     }
 
 
@@ -55,6 +56,7 @@ initialModel =
 type Msg
     = InitiateAdd Path String
     | InitiateReplace Path String
+    | UpdateSearch String
     | CommitChange AST
     | Focus (Result Browser.Dom.Error ())
     | Noop
@@ -62,28 +64,71 @@ type Msg
 
 updateModel : Msg -> Model -> ( Model, Cmd Msg )
 updateModel msg model =
+    let
+        noCmd m =
+            ( m, Cmd.none )
+    in
     case msg of
         Noop ->
-            ( model, Cmd.none )
+            noCmd model
 
         Focus _ ->
             -- Is it important to handle the focus error?
-            ( model, Cmd.none )
+            noCmd model
 
         InitiateAdd path search ->
-            ( { model | replacing = makeReplacement path True search }
-            , Task.attempt Focus
-                (Browser.Dom.focus (generateIdForAdd path))
-            )
+            setReplacement model path True search
 
         InitiateReplace path search ->
-            ( { model | replacing = makeReplacement path False search }, Cmd.none )
+            setReplacement model path False search
+
+        UpdateSearch newSearch ->
+            case model.replacing of
+                Just r ->
+                    noCmd { model | replacing = Just { r | search = newSearch } }
+
+                Nothing ->
+                    noCmd model
 
         CommitChange newAst ->
-            ( applyAstMutation model newAst, Cmd.none )
+            noCmd { model | program = applyAstMutation model newAst, replacing = Nothing }
 
 
-applyAstMutation : Model -> AST -> Model
+
+-- Update model.replacing while auto-applying good AST changes and focusing the window
+
+
+setReplacement : Model -> Path -> Bool -> String -> ( Model, Cmd Msg )
+setReplacement model newPath isAdd newSearch =
+    let
+        newProgram =
+            case model.replacing of
+                Just { search, path } ->
+                    case ( path /= newPath, tryParseAtomAst search ) of
+                        ( True, Just ast ) ->
+                            applyAstMutation model ast
+
+                        _ ->
+                            model.program
+
+                _ ->
+                    model.program
+
+        -- User might be replacing the parent of their new path
+        ( newReplacing, command ) =
+            case truncatePathToAst isAdd newPath newProgram of
+                Nothing ->
+                    ( Nothing, Cmd.none )
+
+                Just validPath ->
+                    ( makeReplacement validPath isAdd newSearch
+                    , Task.attempt Focus (Browser.Dom.focus (generateIdForAdd validPath))
+                    )
+    in
+    ( { model | program = newProgram, replacing = newReplacing }, command )
+
+
+applyAstMutation : Model -> AST -> AST
 applyAstMutation model ast =
     case model.replacing of
         Just replacement ->
@@ -95,47 +140,26 @@ applyAstMutation model ast =
                     else
                         ReplaceWith ast
             in
-            { program = commitASTTransformation replacement.path transformation model.program
-            , replacing = Nothing
-            }
+            commitASTTransformation replacement.path transformation model.program
 
         Nothing ->
-            model
+            model.program
 
 
-makeReplacement : Path -> Bool -> String -> Replacement
+makeReplacement : Path -> Bool -> String -> Maybe Replacement
 makeReplacement path addition search =
     Just { path = path, search = search, addition = addition }
-
-
-ctxEnterPath : IterationContext -> Int -> IterationContext
-ctxEnterPath context index =
-    { context | path = context.path ++ [ index ] }
 
 
 ctxIsReplacingPath : IterationContext -> Path -> Bool
 ctxIsReplacingPath context path =
     context.replacing
-        |> Maybe.map
-            (\r ->
-                if r.addition == False then
-                    r.path == path
-
-                else
-                    False
-            )
+        |> Maybe.map (\r -> not r.addition && r.path == path)
         |> Maybe.withDefault False
 
 
 ctxIsAddingPath : IterationContext -> Path -> Bool
 ctxIsAddingPath context path =
     context.replacing
-        |> Maybe.map
-            (\r ->
-                if r.addition then
-                    r.path == path
-
-                else
-                    False
-            )
+        |> Maybe.map (\r -> r.addition && r.path == path)
         |> Maybe.withDefault False

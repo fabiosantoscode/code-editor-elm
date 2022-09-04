@@ -5,9 +5,8 @@ import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Machine.StandardLibrary exposing (StandardLibraryFunction, standardLibraryFunctions)
 import Model exposing (..)
-import RenderEditor exposing (..)
+import RenderEditor exposing (renderEditor)
 
 
 
@@ -24,42 +23,6 @@ main =
         }
 
 
-renderFunctionButton : StandardLibraryFunction -> Html Msg
-renderFunctionButton f =
-    let
-        asForm =
-            Form
-                { head = f.name
-                , tail = List.repeat (List.length f.parameters) Incomplete
-                }
-    in
-    button
-        [ onClick (CommitChange asForm)
-        , class "replace-function-button"
-        ]
-        [ text f.name ]
-
-
-renderFunctionButtons : List StandardLibraryFunction -> Html Msg
-renderFunctionButtons functions =
-    Html.div
-        [ class "replace-function-buttons"
-        ]
-        (List.map renderFunctionButton functions)
-
-
-renderReplaceUi : Model -> List (Html Msg)
-renderReplaceUi { replacing } =
-    case replacing of
-        Nothing ->
-            []
-
-        Just _ ->
-            [ div [ class "ast-replace-ui" ]
-                [ renderFunctionButtons standardLibraryFunctions ]
-            ]
-
-
 renderModel : Model -> Html Msg
 renderModel model =
     div []
@@ -68,5 +31,4 @@ renderModel model =
                 model
                 { path = [], replacing = model.replacing }
                 model.program
-            ++ renderReplaceUi model
         )

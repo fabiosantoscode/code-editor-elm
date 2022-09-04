@@ -21,3 +21,26 @@ list2ToTuple list =
 
         _ ->
             Nothing
+
+
+bool2Int : Bool -> Int
+bool2Int b =
+    if b then
+        1
+
+    else
+        0
+
+
+listAt : List a -> Int -> Maybe a
+listAt list index =
+    case list of
+        [] ->
+            Nothing
+
+        item :: rest ->
+            if index == 0 then
+                Just item
+
+            else
+                listAt rest (index - 1)
