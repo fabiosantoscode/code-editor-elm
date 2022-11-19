@@ -14,7 +14,7 @@
     --color-replace: hsl(240, 51%, 38%);
 
     --color-var-name: hsl(0, 0%, 0%);
-    --color-var-name--clickable: hsl(240, 55%, 45%);
+    --color-var-name--highlighted: hsl(240, 55%, 45%);
     --color-add-statement--clickable-last: hsl(240, 55%, 45%);
 
     --color-primitive: #5c0080;
@@ -190,10 +190,8 @@
     font-size: 1.2em;
 }
 
-.ast-var-name--clickable {
-    color: var(--color-var-name--clickable);
-    text-decoration: underline;
-    cursor: pointer;
+.color-var-name-highlighted {
+    color: var(--color-var-name--highlighted);
 }
 
 /* numbers */

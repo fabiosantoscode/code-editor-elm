@@ -3,11 +3,10 @@ module Machine.Run exposing (..)
 import AST exposing (AST, Path)
 import Browser exposing (UrlRequest(..))
 import Dict exposing (Dict)
+import Machine.Errors exposing (..)
 import Machine.StandardLibrary exposing (getStandardLibFunction)
 import Set exposing (Set)
 import Utils exposing (..)
-import Machine.Errors exposing (..)
-
 
 
 findAllVars : AST -> Set String
@@ -20,11 +19,11 @@ findAllVars ast =
             Set.empty
 
 
-runPath : AST -> Path -> Result RunError Int
+runPath : AST -> Path -> MachineResult
 runPath ast path =
     case path of
         [] ->
-            Err (InternalPanic "could not find node (empty path)")
+            Err NoResult
 
         rootIndex :: _ ->
             AST.getAstNodeByPath path ast
@@ -56,7 +55,7 @@ gatherVariables ast until =
             Debug.todo "What"
 
 
-runExpression : Dict String Int -> Set String -> AST -> Result RunError Int
+runExpression : Dict String Int -> Set String -> AST -> MachineResult
 runExpression vars allVars expression =
     case expression of
         AST.Block _ ->
@@ -73,7 +72,7 @@ runExpression vars allVars expression =
                     )
 
         AST.Incomplete ->
-            Err Incomplete
+            Err NoResult
 
         AST.Number { value } ->
             Ok value
@@ -85,7 +84,7 @@ runExpression vars allVars expression =
 
                 Nothing ->
                     if Set.member r.name allVars then
-                        Err ReferencedError
+                        Err NoResult
 
                     else
                         Err (MissingVar r.name)

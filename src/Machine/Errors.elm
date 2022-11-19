@@ -6,8 +6,11 @@ type RunError
     | MissingVar String
     | IncorrectArgCount Int Int
     | InternalPanic String
-    | ReferencedError
-    | Incomplete
+    | NoResult
+
+
+type alias MachineResult =
+    Result RunError Int
 
 
 formatError : RunError -> String
@@ -20,13 +23,10 @@ formatError err =
             "Missing variable " ++ varname
 
         IncorrectArgCount actual expected ->
-            "Expected " ++ (String.fromInt expected) ++ " parameters, but received " ++ (String.fromInt actual)
+            "Expected " ++ String.fromInt expected ++ " parameters, but received " ++ String.fromInt actual
 
         InternalPanic panic ->
             "FATAL ERROR " ++ panic
 
-        Incomplete ->
-            ""
-
-        ReferencedError ->
+        NoResult ->
             ""

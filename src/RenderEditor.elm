@@ -4,7 +4,7 @@ import AST exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput)
-import Machine.Errors
+import Machine.Errors exposing (MachineResult)
 import Machine.Parse exposing (tryParseAtomToString)
 import Machine.Run
 import Machine.StandardLibrary exposing (FunctionDisplayType(..), getFunctionDisplayType, getStandardLibFunction)
@@ -27,7 +27,6 @@ renderEditor model ctx ast =
 
         renderedHtml =
             case ast of
-
                 Number { value } ->
                     [ replaceableLeafNode ctx className (String.fromInt value) ]
 
@@ -63,18 +62,19 @@ renderEditor model ctx ast =
                             )
                         )
                     ]
+
         resultHere =
-            Machine.Run.runPath model.program ctx.path
+            Machine.Run.runPath model.program ctx.path |> Debug.log ("result here" ++ Debug.toString ctx.path)
 
         astResult =
-            span [ style "color" "red" ]
-                [ case resultHere of
+            
+                 case resultHere of
                     Err e ->
-                        text (Machine.Errors.formatError e)
+                        span [ style "color" "red" ][text (Machine.Errors.formatError e)]
 
                     Ok r ->
                         text (String.fromInt r)
-                ]
+                
     in
     case ast of
         Block _ ->
@@ -88,6 +88,14 @@ renderEditor model ctx ast =
 
         _ ->
             case ( resultHere, ctx.path ) of
+                ( Err Machine.Errors.NoResult, _ ) ->
+                    -- Only show errors in the statement level (don't worry they bubble up)
+                    if renderResultInstead ctx ast then
+                        [ replaceButton ctx.path "color-inline-result cursor-pointer" (text "n/a") ]
+
+                    else
+                        renderedHtml
+
                 ( Err _, [ _ ] ) ->
                     -- Only show errors in the statement level (don't worry they bubble up)
                     renderedHtml ++ [ astResult ]
