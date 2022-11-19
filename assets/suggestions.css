@@ -51,19 +51,3 @@
     height: 2em;
     margin: 0 0.2em;
 }
-
-.height-explain {
-    font-size: 0.4em;
-    height: 1em;
-    margin-top: 0.2em;
-}
-
-.text-explain {
-    font-family: sans-serif;
-    color: green;
-}
-
-.text-error {
-    font-family: sans-serif;
-    color: red;
-}

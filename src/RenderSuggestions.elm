@@ -1,25 +1,28 @@
 module RenderSuggestions exposing (..)
 
 import AST exposing (..)
+import Dict exposing (Dict)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Machine.Parse exposing (ParseResult(..), tryParseAtom)
+import Machine.Run exposing (gatherVariables)
 import Machine.StandardLibrary exposing (StandardLibraryFunction, standardLibraryFunctions)
 import Model exposing (..)
+import Utils exposing (..)
 
 
-renderSuggestions : Model -> IterationContext -> List (Html Msg) -> List (Html Msg)
-renderSuggestions model ctx statHtml =
+renderSuggestions : Model -> Int -> List (Html Msg) -> List (Html Msg)
+renderSuggestions model index statHtml =
     let
-        headPath =
-            \{ path } -> List.head path
-
         maybeUi =
             case model.replacing of
                 Just r ->
-                    if headPath ctx == headPath r then
-                        [ replaceUi r ]
+                    if List.head r.path == Just index then
+                        [ replaceUi
+                            r
+                            (gatherVariables model.program index)
+                        ]
 
                     else
                         []
@@ -34,20 +37,24 @@ renderSuggestions model ctx statHtml =
     ]
 
 
-replaceUi : Replacement -> Html Msg
-replaceUi r =
+replaceUi : Replacement -> Dict String Int -> Html Msg
+replaceUi r goodVars =
     div
         [ class "ast-suggestions__wrapper" ]
         [ div [ class "ast-suggestions__root" ]
-            (renderReplaceBox r
-                ++ [ renderFunctionButtons standardLibraryFunctions ]
-            )
+            [ renderReplaceBox r
+            , renderSuggestionButtonList
+                (renderParsedNumber r
+                    ++ getSearchSuggestions r goodVars
+                )
+            , renderFunctionButtons standardLibraryFunctions
+            ]
         ]
 
 
-renderReplaceBox : Replacement -> List (Html Msg)
+renderReplaceBox : Replacement -> Html Msg
 renderReplaceBox r =
-    [ div []
+    div []
         [ input
             [ class "replace-box"
             , value r.search
@@ -58,23 +65,56 @@ renderReplaceBox r =
         , text " "
         , button [] [ text "Place" ]
         ]
-    , div []
-        [ case tryParseAtom r.search of
-            ParsedNumber _ ->
-                div [ class "height-explain text-explain" ] [ text "Number" ]
 
-            ParseError s ->
-                div [ class "height-explain text-error" ] [ text s ]
 
-            Empty ->
-                div [ class "height-explain" ] []
-        ]
-    ]
+renderParsedNumber : Replacement -> List (Html Msg)
+renderParsedNumber r =
+    case tryParseAtom r.search of
+        ParsedNumber value ->
+            [ button
+                [ class "height-explain text-explain"
+                , onClick (CommitChange (AST.Number { value = value }))
+                ]
+                [ text ("Number " ++ String.fromInt value) ]
+            ]
+
+        _ ->
+            []
+
+
+getSearchSuggestions : Replacement -> Dict String Int -> List (Html Msg)
+getSearchSuggestions r goodVars =
+    let
+        matches search var =
+            search /= "" && String.contains (String.toLower search) (String.toLower var)
+
+        renderSuggestion var value =
+            button
+                [ onClick (CommitChange (AST.Reference { name = var })) ]
+                [ text (var ++ " (" ++ String.fromInt value ++ ")") ]
+    in
+    goodVars
+        |> Dict.toList
+        |> List.reverse
+        |> flatMap
+            (\_ ( var, value ) ->
+                if matches r.search var then
+                    [ renderSuggestion var value ]
+
+                else
+                    []
+            )
+        |> List.take 3
+
+
+renderSuggestionButtonList : List (Html Msg) -> Html Msg
+renderSuggestionButtonList xs =
+    ul [] (List.map (\item -> li [] [ item ]) xs)
 
 
 renderFunctionButtons : List StandardLibraryFunction -> Html Msg
 renderFunctionButtons functions =
-    Html.div
+    div
         [ class "replace-function-buttons"
         ]
         (List.map renderFunctionButton functions)

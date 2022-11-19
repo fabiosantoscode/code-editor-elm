@@ -9,8 +9,8 @@ import Set exposing (Set)
 import Utils exposing (..)
 
 
-findAllVars : AST -> Set String
-findAllVars ast =
+findAllVarNames : AST -> Set String
+findAllVarNames ast =
     case ast of
         AST.Block { assignments } ->
             assignments |> List.map (\a -> a.name) |> Set.fromList
@@ -31,7 +31,7 @@ runPath ast path =
                 |> Result.andThen
                     (runExpression
                         (gatherVariables ast rootIndex)
-                        (findAllVars ast)
+                        (findAllVarNames ast)
                     )
 
 
@@ -42,7 +42,7 @@ gatherVariables ast until =
             List.take until assignments
                 |> List.foldl
                     (\{ name, expression } vars ->
-                        case runExpression vars (findAllVars ast) expression of
+                        case runExpression vars (findAllVarNames ast) expression of
                             Ok ret ->
                                 Dict.insert name ret vars
 

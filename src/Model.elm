@@ -22,9 +22,7 @@ initialModel =
                         Form
                             { head = "+"
                             , tail =
-                                [ Number { value = 40 }
-                                , Number { value = 2 }
-                                ]
+                                [ Number { value = 40 }, Number { value = 2 } ]
                             }
                   }
                 , { name = "variable2"
@@ -58,7 +56,7 @@ initialModel =
 
 type Msg
     = AddExpression Path
-    | InitiateReplace Path String
+    | InitiateReplace Path
     | UpdateSearch String
     | CommitChange AST
     | Focus (Result Browser.Dom.Error ())
@@ -82,29 +80,34 @@ updateModel msg model =
         AddExpression path ->
             noCmd { model | program = commitASTTransformation path (Insert AST.Incomplete) model.program }
 
-        InitiateReplace path search ->
-            setReplacement model path False search
+        InitiateReplace path ->
+            setReplacement model path
 
         UpdateSearch newSearch ->
-            noCmd (setReplacementSearch model newSearch)
+            noCmd
+                { model
+                    | replacing = setReplacementSearch newSearch model.replacing
+                }
 
         CommitChange newAst ->
-            noCmd { model | program = applyAstMutation model newAst, replacing = Nothing }
+            noCmd
+                { model
+                    | program = applyAstMutation model newAst
+                    , replacing = setReplacementSearch "" model.replacing
+                }
 
 
-setReplacementSearch : Model -> String -> Model
-setReplacementSearch model newSearch =
-    { model
-        | replacing = Maybe.map (\r -> { r | search = newSearch }) model.replacing
-    }
+setReplacementSearch : String -> Maybe Replacement -> Maybe Replacement
+setReplacementSearch newSearch =
+    Maybe.map (\r -> { r | search = newSearch })
 
 
 
 -- Update model.replacing while auto-applying good AST changes and focusing the window
 
 
-setReplacement : Model -> Path -> Bool -> String -> ( Model, Cmd Msg )
-setReplacement model newPath isAdd newSearch =
+setReplacement : Model -> Path -> ( Model, Cmd Msg )
+setReplacement model newPath =
     let
         newProgram =
             case model.replacing of
@@ -121,12 +124,12 @@ setReplacement model newPath isAdd newSearch =
 
         -- User might be replacing the parent of their new path
         ( newReplacing, command ) =
-            case truncatePathToAst isAdd newPath newProgram of
+            case truncatePathToAst False newPath newProgram of
                 Nothing ->
                     ( Nothing, Cmd.none )
 
                 Just validPath ->
-                    ( makeReplacement validPath newSearch
+                    ( makeReplacement validPath ""
                     , Task.attempt Focus (Browser.Dom.focus (generateIdForAdd validPath))
                     )
     in

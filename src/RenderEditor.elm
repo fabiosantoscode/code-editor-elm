@@ -132,7 +132,7 @@ renderBlock model ctx { assignments } =
             ctxEnterPath ctx
 
         suggestions i contents =
-            renderSuggestions model (enter i) contents
+            renderSuggestions model i contents
 
         addWidget i =
             [ addStatementButton (enter i) (i == List.length assignments) ]
@@ -201,7 +201,7 @@ replaceButton : Path -> String -> Html Msg -> Html Msg
 replaceButton path className astHtml =
     button
         [ class ("ast-button " ++ className)
-        , onClick (InitiateReplace path "")
+        , onClick (InitiateReplace path)
         ]
         [ astHtml ]
 
@@ -236,7 +236,7 @@ replaceableLeafNode ctx className contents =
             autoWidthButton
                 [ class "ast-input margin-y-form-child"
                 , class className
-                , onClick (InitiateReplace ctx.path "")
+                , onClick (InitiateReplace ctx.path)
                 ]
                 contents
 
