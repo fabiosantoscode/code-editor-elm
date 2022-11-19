@@ -44,6 +44,36 @@ type alias Replacement =
     { path : Path, search : String, addition : Bool }
 
 
+getDepth : AST -> Int
+getDepth ast =
+    getAstChildren ast
+        |> List.map (\child -> 1 + getDepth child)
+        |> List.maximum
+        |> Maybe.withDefault 1
+
+
+getAstNodeByPath : Path -> AST -> Maybe AST
+getAstNodeByPath path ast =
+    case path of
+        [] ->
+            Just ast
+
+        index :: rest ->
+            getAstChildren ast
+                |> listAt index
+                |> Maybe.andThen (getAstNodeByPath rest)
+
+
+containsIncompleteNode : AST -> Bool
+containsIncompleteNode ast =
+    case ast of
+        Incomplete ->
+            True
+
+        _ ->
+            List.any containsIncompleteNode (getAstChildren ast)
+
+
 getTransAddedNode : ASTTransformation -> AST
 getTransAddedNode trans =
     case trans of
@@ -178,7 +208,7 @@ truncatePathToAstInner isAdd path ast =
                 [ leafIndex ]
 
         index :: rest ->
-            listAt (getAstChildren ast) index
+            listAt index (getAstChildren ast)
                 |> Maybe.map (\e -> index :: truncatePathToAstInner isAdd rest e)
                 |> Maybe.withDefault []
 

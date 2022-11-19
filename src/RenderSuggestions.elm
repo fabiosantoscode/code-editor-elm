@@ -47,13 +47,17 @@ replaceUi r =
 
 renderReplaceBox : Replacement -> List (Html Msg)
 renderReplaceBox r =
-    [ input
-        [ class "replace-box"
-        , value r.search
-        , onInput UpdateSearch
-        , id (generateIdForAdd r.path)
+    [ div []
+        [ input
+            [ class "replace-box"
+            , value r.search
+            , onInput UpdateSearch
+            , id (generateIdForAdd r.path)
+            ]
+            []
+        , text " "
+        , button [] [ text "Place" ]
         ]
-        []
     , div []
         [ case tryParseAtom r.search of
             ParsedNumber _ ->
@@ -63,7 +67,7 @@ renderReplaceBox r =
                 div [ class "height-explain text-error" ] [ text s ]
 
             Empty ->
-                div [ class "height-explain"] []
+                div [ class "height-explain" ] []
         ]
     ]
 

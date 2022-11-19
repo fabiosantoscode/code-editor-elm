@@ -17,8 +17,8 @@
     --color-var-name--clickable: hsl(240, 55%, 45%);
     --color-add-statement--clickable-last: hsl(240, 55%, 45%);
 
-    --color-number: #5c0080;
-    --color-number--clickable: #9845b9;
+    --color-primitive: #5c0080;
+    --color-primitive-highlight: #9845b9;
 
     --bg-color-form--depth-1: hsl(23, 12%, 87%);
     --bg-color-form--depth-2: hsl(23, 12%, 76%);
@@ -31,8 +31,8 @@
     --inline-transition: all 80ms ease;
     --vertical-transition: all 300ms ease;
 
-    --form-child-padding: 0.3em;
-    --form-child-vertical-padding: 0.15em;
+    --form-child-padding: 0.4rem;
+    --form-child-vertical-padding: 0.15rem;
 }
 
 /* atomic */
@@ -75,6 +75,31 @@
     color: var(--color-var-name);
 }
 
+.color-primitive {
+    color: var(--color-primitive);
+}
+
+.padding-x {
+    padding-left: var(--form-child-padding);
+    padding-right: var(--form-child-padding);
+}
+
+.padding-x-2 {
+    padding-left: calc(var(--form-child-padding) * 2);
+    padding-right: calc(var(--form-child-padding) * 2);
+}
+
+.padding-y {
+    padding-top: var(--form-child-padding);
+    padding-bottom: var(--form-child-padding);
+}
+
+.color-inline-result { color: blue; }
+
+.cursor-pointer { cursor: pointer; }
+
+.min-width-1ch { min-width: 1ch; }
+
 .outline-replace {
     outline: 4px solid var(--color-replace);
     border-radius: 0.25rem;
@@ -93,6 +118,7 @@
 .layout-vertical {
     display: flex;
     flex-direction: column;
+    align-items: stretch;
 }
 
 .layout-vertical > * + * {
@@ -173,11 +199,11 @@
 /* numbers */
 
 .ast-number {
-    color: var(--color-number);
+    color: var(--color-primitive);
 }
 
 .ast-number.ast-replaceable--being-replaced {
-    color: var(--color-number--clickable);
+    color: var(--color-primitive-highlight);
 }
 
 /* forms */

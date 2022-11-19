@@ -32,8 +32,8 @@ bool2Int b =
         0
 
 
-listAt : List a -> Int -> Maybe a
-listAt list index =
+listAt : Int -> List a -> Maybe a
+listAt index list =
     case list of
         [] ->
             Nothing
@@ -43,4 +43,30 @@ listAt list index =
                 Just item
 
             else
-                listAt rest (index - 1)
+                listAt (index - 1) rest
+
+
+listAllJust : List (Maybe a) -> Maybe (List a)
+listAllJust xs =
+    case xs of
+        [] ->
+            Just []
+
+        (Just item) :: rest ->
+            listAllJust rest |> Maybe.map (\goodRest -> item :: goodRest)
+
+        Nothing :: _ ->
+            Nothing
+
+
+listAllOk : List (Result listError listItem) -> Result listError (List listItem)
+listAllOk xs =
+    case xs of
+        [] ->
+            Result.Ok []
+
+        (Result.Ok item) :: rest ->
+            listAllOk rest |> Result.map (\goodRest -> item :: goodRest)
+
+        (Result.Err x) :: _ ->
+            Result.Err x

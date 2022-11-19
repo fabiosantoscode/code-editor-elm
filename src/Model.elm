@@ -22,7 +22,7 @@ initialModel =
                         Form
                             { head = "+"
                             , tail =
-                                [ Number { value = 1 }
+                                [ Number { value = 40 }
                                 , Number { value = 2 }
                                 ]
                             }
@@ -30,7 +30,7 @@ initialModel =
                 , { name = "variable2"
                   , expression =
                         Form
-                            { head = "func"
+                            { head = "And"
                             , tail =
                                 [ Form
                                     { head = "=="
@@ -39,8 +39,13 @@ initialModel =
                                         , Number { value = 3 }
                                         ]
                                     }
+                                , Number { value = 3 }
                                 ]
                             }
+                  }
+                , { name = "reference"
+                  , expression =
+                        Reference { name = "addedNumbers" }
                   }
                 ]
             }
@@ -160,8 +165,27 @@ ctxIsReplacingPath context path =
         |> Maybe.withDefault False
 
 
-ctxIsAddingPath : IterationContext -> Path -> Bool
+ctxIsAddingPath : IterationContext -> Path -> Maybe Replacement
 ctxIsAddingPath context path =
     context.replacing
-        |> Maybe.map (\r -> r.addition && r.path == path)
-        |> Maybe.withDefault False
+        |> Maybe.andThen
+            (\r ->
+                if r.addition && r.path == path then
+                    Just r
+
+                else
+                    Nothing
+            )
+
+
+pathStartsWith : Path -> Path -> Bool
+pathStartsWith haystack needle =
+    case ( haystack, needle ) of
+        ( _, [] ) ->
+            True
+
+        ( itemh :: resth, itemn :: restn ) ->
+            itemh == itemn && pathStartsWith resth restn
+
+        _ ->
+            False

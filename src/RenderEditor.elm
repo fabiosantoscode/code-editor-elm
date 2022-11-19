@@ -4,9 +4,10 @@ import AST exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput)
-import Html.Lazy exposing (lazy2)
-import Machine.Parse exposing (tryParseAtom, tryParseAtomToString)
-import Machine.StandardLibrary exposing (FunctionDisplayType(..), getStandardLibFunction)
+import Machine.Errors
+import Machine.Parse exposing (tryParseAtomToString)
+import Machine.Run
+import Machine.StandardLibrary exposing (FunctionDisplayType(..), getFunctionDisplayType, getStandardLibFunction)
 import Model exposing (..)
 import RenderSuggestions exposing (renderSuggestions)
 import Utils exposing (..)
@@ -23,36 +24,80 @@ renderEditor model ctx ast =
             classListFor ast
                 ++ beingReplacedClasses ctx
                 |> String.join " "
+
+        renderedHtml =
+            case ast of
+
+                Number { value } ->
+                    [ replaceableLeafNode ctx className (String.fromInt value) ]
+
+                Reference { name } ->
+                    [ replaceableLeafNode ctx className name ]
+
+                Incomplete ->
+                    [ replaceableLeafNode ctx className "" ]
+
+                Block p ->
+                    [ div [ class className ] (renderBlock model ctx p) ]
+
+                Form f ->
+                    let
+                        childRender index child =
+                            renderEditor model (ctxEnterPath ctx index) child
+                    in
+                    [ replaceableNode ctx
+                        (div
+                            [ class className
+                            , class ("ast-form--depth-" ++ String.fromInt (List.length ctx.path))
+                            , class
+                                (if renderFormHorizontally ctx ast then
+                                    "layout-horizontal"
+
+                                 else
+                                    "layout-vertical padding-y padding-x-2"
+                                )
+                            ]
+                            (renderForm ctx.path
+                                f
+                                childRender
+                            )
+                        )
+                    ]
+        resultHere =
+            Machine.Run.runPath model.program ctx.path
+
+        astResult =
+            span [ style "color" "red" ]
+                [ case resultHere of
+                    Err e ->
+                        text (Machine.Errors.formatError e)
+
+                    Ok r ->
+                        text (String.fromInt r)
+                ]
     in
     case ast of
-        Block p ->
-            [ div [ class className ] (renderBlock model ctx p) ]
+        Block _ ->
+            renderedHtml
 
-        Form f ->
-            let
-                childRender index child =
-                    renderEditor model (ctxEnterPath ctx index) child
-            in
-            [ replaceableNode ctx
-                (div
-                    [ class className
-                    , class ("ast-form--depth-" ++ String.fromInt (List.length ctx.path))
-                    ]
-                    (renderForm ctx.path
-                        f
-                        (flatMap childRender f.tail)
-                    )
-                )
-            ]
-
-        Number { value } ->
-            [ replaceableLeafNode ctx className (String.fromInt value) ]
-
-        Reference { name } ->
-            [ replaceableLeafNode ctx className name ]
+        Number _ ->
+            renderedHtml
 
         Incomplete ->
-            [ replaceableLeafNode ctx className "" ]
+            renderedHtml
+
+        _ ->
+            case ( resultHere, ctx.path ) of
+                ( Err _, [ _ ] ) ->
+                    -- Only show errors in the statement level (don't worry they bubble up)
+                    renderedHtml ++ [ astResult ]
+
+                _ ->
+                    if renderResultInstead ctx ast then
+                        [ replaceButton ctx.path "color-inline-result cursor-pointer" astResult ]
+
+                    else
+                        renderedHtml
 
 
 classListFor : AST -> List String
@@ -62,7 +107,7 @@ classListFor ast =
             [ "ast-program", "layout-vertical" ]
 
         Form _ ->
-            [ "ast-form", "layout-horizontal", "reveal-bg-behind" ]
+            [ "ast-form", "reveal-bg-behind" ]
 
         Number _ ->
             [ "ast-number" ]
@@ -71,15 +116,12 @@ classListFor ast =
             [ "ast-reference" ]
 
         Incomplete ->
-            [ "ast-incomplete", "reveal-bg-behind" ]
+            [ "ast-incomplete", "reveal-bg-behind", "min-width-1ch" ]
 
 
 renderBlock : Model -> IterationContext -> RBlock -> List (Html Msg)
 renderBlock model ctx { assignments } =
     let
-        varNames =
-            List.map .name assignments
-
         enter =
             ctxEnterPath ctx
 
@@ -102,43 +144,45 @@ renderBlock model ctx { assignments } =
                 )
     in
     addWidget 0
-        ++ List.indexedMap (lazy2 renderWithVarName) assignments
+        ++ List.indexedMap renderWithVarName assignments
 
 
-renderPrefixForm : Path -> String -> List (Html Msg) -> List (Html Msg)
-renderPrefixForm path headString tailHtml =
+renderFormHorizontally : IterationContext -> AST -> Bool
+renderFormHorizontally ctx form =
+    getDepth form < 3
+
+
+renderResultInstead : IterationContext -> AST -> Bool
+renderResultInstead ctx node =
+    if containsIncompleteNode node then
+        False
+
+    else
+        case ctx.replacing of
+            Just { path, addition } ->
+                not (not addition && pathStartsWith path ctx.path)
+
+            _ ->
+                True
+
+
+renderForm : Path -> RForm -> (Int -> AST -> List (Html Msg)) -> List (Html Msg)
+renderForm path form childRender =
     let
         btn =
-            replaceButton path "ast-form__head"
+            replaceButton path "ast-form__head" (text form.head)
 
-        endBtn =
-            replaceButton path "ast-form__endparen"
+        isBinOp =
+            getFunctionDisplayType form.head == Just DispOperator
     in
-    btn (text (headString ++ "(")) :: tailHtml ++ [ endBtn (text ")") ]
+    case ( form.tail, isBinOp ) of
+        ( [ left, right ], True ) ->
+            childRender 0 left
+                ++ btn
+                :: childRender 1 right
 
-
-renderBinOpForm : Path -> String -> ( Html Msg, Html Msg ) -> List (Html Msg)
-renderBinOpForm path opName ( left, right ) =
-    let
-        btn =
-            replaceButton path "ast-form__op"
-    in
-    [ btn (text opName), left, right ]
-
-
-renderForm : Path -> RForm -> List (Html Msg) -> List (Html Msg)
-renderForm path form tailHtml =
-    getStandardLibFunction form.head
-        |> Maybe.andThen
-            (\f ->
-                if f.display == DispOperator then
-                    list2ToTuple tailHtml
-                        |> Maybe.map (renderBinOpForm path form.head)
-
-                else
-                    Nothing
-            )
-        |> Maybe.withDefault (renderPrefixForm path form.head tailHtml)
+        _ ->
+            btn :: flatMap childRender form.tail
 
 
 beingReplacedClasses : IterationContext -> List String
@@ -224,27 +268,31 @@ autoWidthButton attributes string =
 
 addStatementButton : IterationContext -> Bool -> Html Msg
 addStatementButton ctx isLast =
-    if ctxIsAddingPath ctx ctx.path then
-        input
-            [ class "ast-input ast-add-statement-input"
-            , class "ast-add-statement-input--adding"
-            , class "outline-replace"
-            , placeholder "Add statement"
-            ]
-            []
+    case ctxIsAddingPath ctx ctx.path of
+        Just r ->
+            input
+                [ class "ast-input ast-add-statement-input"
+                , class "ast-add-statement-input--adding"
+                , class "outline-replace"
+                , placeholder "Add statement"
+                , onInput (InitiateAdd ctx.path)
+                , value r.search
+                ]
+                []
 
-    else if isLast then
-        button
-            [ class "ast-button ast-add-statement-input"
-            , class "ast-add-statement-input--clickable-last"
-            , onClick (InitiateAdd ctx.path "")
-            ]
-            [ text "+" ]
+        _ ->
+            if isLast then
+                button
+                    [ class "ast-button ast-add-statement-input"
+                    , class "ast-add-statement-input--clickable-last"
+                    , onClick (InitiateAdd ctx.path "")
+                    ]
+                    [ text "+" ]
 
-    else
-        button
-            [ class "ast-button ast-add-statement-input"
-            , class "ast-add-statement-input--clickable"
-            , onClick (InitiateAdd ctx.path "")
-            ]
-            [ span [] [] ]
+            else
+                button
+                    [ class "ast-button ast-add-statement-input"
+                    , class "ast-add-statement-input--clickable"
+                    , onClick (InitiateAdd ctx.path "")
+                    ]
+                    [ span [] [] ]
