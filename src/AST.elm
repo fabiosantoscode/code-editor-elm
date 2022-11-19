@@ -1,6 +1,5 @@
 module AST exposing (..)
 
-import Json.Decode exposing (bool)
 import Set exposing (Set)
 import Utils exposing (..)
 
@@ -41,7 +40,7 @@ type alias Path =
 
 
 type alias Replacement =
-    { path : Path, search : String, addition : Bool }
+    { path : Path, search : String }
 
 
 getDepth : AST -> Int

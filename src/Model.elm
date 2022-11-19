@@ -44,8 +44,7 @@ initialModel =
                             }
                   }
                 , { name = "reference"
-                  , expression =
-                        Reference { name = "addedNumbers" }
+                  , expression = Reference { name = "addedNumbers" }
                   }
                 ]
             }
@@ -53,13 +52,12 @@ initialModel =
         Just
             { path = [ 2 ]
             , search = ""
-            , addition = True
             }
     }
 
 
 type Msg
-    = InitiateAdd Path String
+    = AddExpression Path
     | InitiateReplace Path String
     | UpdateSearch String
     | CommitChange AST
@@ -81,8 +79,8 @@ updateModel msg model =
             -- Is it important to handle the focus error?
             noCmd model
 
-        InitiateAdd path search ->
-            setReplacement model path True search
+        AddExpression path ->
+            noCmd { model | program = commitASTTransformation path (Insert AST.Incomplete) model.program }
 
         InitiateReplace path search ->
             setReplacement model path False search
@@ -128,7 +126,7 @@ setReplacement model newPath isAdd newSearch =
                     ( Nothing, Cmd.none )
 
                 Just validPath ->
-                    ( makeReplacement validPath isAdd newSearch
+                    ( makeReplacement validPath newSearch
                     , Task.attempt Focus (Browser.Dom.focus (generateIdForAdd validPath))
                     )
     in
@@ -138,44 +136,23 @@ setReplacement model newPath isAdd newSearch =
 applyAstMutation : Model -> AST -> AST
 applyAstMutation model ast =
     case model.replacing of
-        Just replacement ->
-            let
-                transformation =
-                    if replacement.addition then
-                        Insert ast
-
-                    else
-                        ReplaceWith ast
-            in
-            commitASTTransformation replacement.path transformation model.program
+        Just { path } ->
+            commitASTTransformation path (ReplaceWith ast) model.program
 
         Nothing ->
             model.program
 
 
-makeReplacement : Path -> Bool -> String -> Maybe Replacement
-makeReplacement path addition search =
-    Just { path = path, search = search, addition = addition }
+makeReplacement : Path -> String -> Maybe Replacement
+makeReplacement path search =
+    Just { path = path, search = search }
 
 
 ctxIsReplacingPath : IterationContext -> Path -> Bool
 ctxIsReplacingPath context path =
     context.replacing
-        |> Maybe.map (\r -> not r.addition && r.path == path)
+        |> Maybe.map (\r -> r.path == path)
         |> Maybe.withDefault False
-
-
-ctxIsAddingPath : IterationContext -> Path -> Maybe Replacement
-ctxIsAddingPath context path =
-    context.replacing
-        |> Maybe.andThen
-            (\r ->
-                if r.addition && r.path == path then
-                    Just r
-
-                else
-                    Nothing
-            )
 
 
 pathStartsWith : Path -> Path -> Bool

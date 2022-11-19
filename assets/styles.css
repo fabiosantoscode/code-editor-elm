@@ -99,10 +99,10 @@
 .cursor-pointer { cursor: pointer; }
 
 .min-width-1ch { min-width: 1ch; }
+.min-height-1em { min-height: 1em; }
 
 .outline-replace {
     outline: 4px solid var(--color-replace);
-    border-radius: 0.25rem;
 }
 
 .layout-horizontal {
@@ -198,10 +198,6 @@
 
 .ast-number {
     color: var(--color-primitive);
-}
-
-.ast-number.ast-replaceable--being-replaced {
-    color: var(--color-primitive-highlight);
 }
 
 /* forms */

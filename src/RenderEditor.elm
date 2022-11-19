@@ -3,11 +3,11 @@ module RenderEditor exposing (renderEditor)
 import AST exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onClick, onInput)
-import Machine.Errors exposing (MachineResult)
+import Html.Events exposing (onClick)
+import Machine.Errors
 import Machine.Parse exposing (tryParseAtomToString)
 import Machine.Run
-import Machine.StandardLibrary exposing (FunctionDisplayType(..), getFunctionDisplayType, getStandardLibFunction)
+import Machine.StandardLibrary exposing (FunctionDisplayType(..), getFunctionDisplayType)
 import Model exposing (..)
 import RenderSuggestions exposing (renderSuggestions)
 import Utils exposing (..)
@@ -49,7 +49,7 @@ renderEditor model ctx ast =
                             [ class className
                             , class ("ast-form--depth-" ++ String.fromInt (List.length ctx.path))
                             , class
-                                (if renderFormHorizontally ctx ast then
+                                (if renderFormHorizontally ast then
                                     "layout-horizontal"
 
                                  else
@@ -64,17 +64,15 @@ renderEditor model ctx ast =
                     ]
 
         resultHere =
-            Machine.Run.runPath model.program ctx.path |> Debug.log ("result here" ++ Debug.toString ctx.path)
+            Machine.Run.runPath model.program ctx.path
 
         astResult =
-            
-                 case resultHere of
-                    Err e ->
-                        span [ style "color" "red" ][text (Machine.Errors.formatError e)]
+            case resultHere of
+                Err e ->
+                    span [ style "color" "red" ] [ text (Machine.Errors.formatError e) ]
 
-                    Ok r ->
-                        text (String.fromInt r)
-                
+                Ok r ->
+                    text (String.fromInt r)
     in
     case ast of
         Block _ ->
@@ -124,7 +122,7 @@ classListFor ast =
             [ "ast-reference" ]
 
         Incomplete ->
-            [ "ast-incomplete", "reveal-bg-behind", "min-width-1ch" ]
+            [ "ast-incomplete", "reveal-bg-behind", "min-width-1ch", "min-height-1em" ]
 
 
 renderBlock : Model -> IterationContext -> RBlock -> List (Html Msg)
@@ -134,13 +132,10 @@ renderBlock model ctx { assignments } =
             ctxEnterPath ctx
 
         suggestions i contents =
-            renderSuggestions model (enter i) False contents
+            renderSuggestions model (enter i) contents
 
         addWidget i =
-            renderSuggestions model
-                (enter i)
-                True
-                [ addStatementButton (enter i) (i == List.length assignments) ]
+            [ addStatementButton (enter i) (i == List.length assignments) ]
 
         renderWithVarName i { expression, name } =
             div []
@@ -155,8 +150,8 @@ renderBlock model ctx { assignments } =
         ++ List.indexedMap renderWithVarName assignments
 
 
-renderFormHorizontally : IterationContext -> AST -> Bool
-renderFormHorizontally ctx form =
+renderFormHorizontally : AST -> Bool
+renderFormHorizontally form =
     getDepth form < 3
 
 
@@ -167,8 +162,8 @@ renderResultInstead ctx node =
 
     else
         case ctx.replacing of
-            Just { path, addition } ->
-                not (not addition && pathStartsWith path ctx.path)
+            Just { path } ->
+                not (pathStartsWith path ctx.path)
 
             _ ->
                 True
@@ -196,10 +191,7 @@ renderForm path form childRender =
 beingReplacedClasses : IterationContext -> List String
 beingReplacedClasses ctx =
     if ctxIsReplacingPath ctx ctx.path then
-        [ "ast-replaceable", "ast-replaceable--being-replaced", "outline-replace" ]
-
-    else if ctx.replacing == Nothing then
-        [ "ast-replaceable", "hover-outline-replace" ]
+        [ "ast-replaceable", "outline-replace" ]
 
     else
         [ "ast-replaceable" ]
@@ -276,31 +268,18 @@ autoWidthButton attributes string =
 
 addStatementButton : IterationContext -> Bool -> Html Msg
 addStatementButton ctx isLast =
-    case ctxIsAddingPath ctx ctx.path of
-        Just r ->
-            input
-                [ class "ast-input ast-add-statement-input"
-                , class "ast-add-statement-input--adding"
-                , class "outline-replace"
-                , placeholder "Add statement"
-                , onInput (InitiateAdd ctx.path)
-                , value r.search
-                ]
-                []
+    if isLast then
+        button
+            [ class "ast-button ast-add-statement-input"
+            , class "ast-add-statement-input--clickable-last"
+            , onClick (AddExpression ctx.path)
+            ]
+            [ text "+" ]
 
-        _ ->
-            if isLast then
-                button
-                    [ class "ast-button ast-add-statement-input"
-                    , class "ast-add-statement-input--clickable-last"
-                    , onClick (InitiateAdd ctx.path "")
-                    ]
-                    [ text "+" ]
-
-            else
-                button
-                    [ class "ast-button ast-add-statement-input"
-                    , class "ast-add-statement-input--clickable"
-                    , onClick (InitiateAdd ctx.path "")
-                    ]
-                    [ span [] [] ]
+    else
+        button
+            [ class "ast-button ast-add-statement-input"
+            , class "ast-add-statement-input--clickable"
+            , onClick (AddExpression ctx.path)
+            ]
+            [ span [] [] ]

@@ -9,23 +9,23 @@ import Machine.StandardLibrary exposing (StandardLibraryFunction, standardLibrar
 import Model exposing (..)
 
 
-renderSuggestions : Model -> IterationContext -> Bool -> List (Html Msg) -> List (Html Msg)
-renderSuggestions model ctx isAddBtn statHtml =
+renderSuggestions : Model -> IterationContext -> List (Html Msg) -> List (Html Msg)
+renderSuggestions model ctx statHtml =
     let
         headPath =
             \{ path } -> List.head path
 
         maybeUi =
-            model.replacing
-                |> Maybe.map
-                    (\r ->
-                        if r.addition == isAddBtn && headPath ctx == headPath r then
-                            [ replaceUi r ]
+            case model.replacing of
+                Just r ->
+                    if headPath ctx == headPath r then
+                        [ replaceUi r ]
 
-                        else
-                            []
-                    )
-                |> Maybe.withDefault []
+                    else
+                        []
+
+                _ ->
+                    []
     in
     [ div [ class "ast-suggestions__container" ]
         (div [ class "ast-suggestions__statement" ] statHtml
