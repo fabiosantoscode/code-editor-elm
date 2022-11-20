@@ -88,32 +88,22 @@ renderEditor model ctx ast =
                     childRender index child =
                         renderEditor model (ctxEnterPath ctx index) child
                 in
-                replaceableNode ctx
-                    (div
-                        [ class className
-                        , class ("ast-form--depth-" ++ String.fromInt (List.length ctx.path))
-                        , classList
-                            [ ( "outline-error", errorOriginatedHere )
-                            , ( "layout-horizontal", renderFormHorizontally ast )
-                            , ( "layout-vertical padding-y padding-x", not (renderFormHorizontally ast) )
-                            ]
-                        ]
-                        (renderForm ctx.path
-                            f
-                            childRender
-                        )
-                    )
-                    :: (if errorOriginatedHere then
-                            [ div [ class "font-size-sm margin-top-0 padding-l" ] [ astResult ] ]
+                (if errorOriginatedHere && ctxIsReplacingPath ctx ctx.path then
+                    [ div [ class "font-size-sm margin-top-0 padding-l" ] [ astResult ] ]
 
-                        else
-                            []
-                       )
-
-
-renderFormHorizontally : AST -> Bool
-renderFormHorizontally form =
-    getDepth form < 3
+                 else
+                    []
+                )
+                    ++ [ replaceableNode ctx
+                            (div
+                                [ class className
+                                , class ("ast-form--depth-" ++ String.fromInt (List.length ctx.path))
+                                , class "layout-vertical padding-y padding-x"
+                                , classList [ ( "outline-error", errorOriginatedHere ) ]
+                                ]
+                                (replaceButton ctx.path "ast-form__head" (text f.head) :: flatMap childRender f.tail)
+                            )
+                       ]
 
 
 renderNodeExpanded : IterationContext -> AST -> Bool
@@ -172,25 +162,6 @@ renderBlock model ctx { assignments } =
     in
     addWidget 0
         ++ List.indexedMap renderWithVarName assignments
-
-
-renderForm : Path -> RForm -> (Int -> AST -> List (Html Msg)) -> List (Html Msg)
-renderForm path form childRender =
-    let
-        btn =
-            replaceButton path "ast-form__head" (text form.head)
-
-        isBinOp =
-            getFunctionDisplayType form.head == Just DispOperator
-    in
-    case ( form.tail, isBinOp ) of
-        ( [ left, right ], True ) ->
-            childRender 0 left
-                ++ btn
-                :: childRender 1 right
-
-        _ ->
-            btn :: flatMap childRender form.tail
 
 
 beingReplacedClasses : IterationContext -> List String

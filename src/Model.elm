@@ -78,32 +78,39 @@ updateModel msg model =
             noCmd model
 
         AddExpression path ->
-            noCmd
-                { model
-                    | program = commitASTTransformation path (Insert AST.Incomplete) model.program
-                    , replacing = makeReplacement path ""
-                }
+            ( { model
+                | program = commitASTTransformation path (Insert AST.Incomplete) model.program
+                , replacing = makeReplacement path ""
+              }
+            , focusPathCmd path
+            )
 
         InitiateReplace path ->
             setReplacement model path
 
         UpdateSearch newSearch ->
-            noCmd
-                { model
-                    | replacing = setReplacementSearch newSearch model.replacing
-                }
+            noCmd (setReplacementSearch newSearch model)
 
         CommitChange newAst ->
-            noCmd
-                { model
-                    | program = applyAstMutation model newAst
-                    , replacing = setReplacementSearch "" model.replacing
-                }
+            case model.replacing of
+                Just r ->
+                    ( { model | program = commitASTTransformation r.path (ReplaceWith newAst) model.program }
+                        |> setReplacementSearch ""
+                    , focusPathCmd r.path
+                    )
+
+                Nothing ->
+                    Debug.todo "replacing nothing"
 
 
-setReplacementSearch : String -> Maybe Replacement -> Maybe Replacement
-setReplacementSearch newSearch =
-    Maybe.map (\r -> { r | search = newSearch })
+focusPathCmd : Path -> Cmd Msg
+focusPathCmd path =
+    Task.attempt Focus (Browser.Dom.focus (generateIdForAdd path))
+
+
+setReplacementSearch : String -> Model -> Model
+setReplacementSearch newSearch m =
+    { m | replacing = Maybe.map (\r -> { r | search = newSearch }) m.replacing }
 
 
 
