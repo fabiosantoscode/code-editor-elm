@@ -160,6 +160,38 @@ mutateNthChild index trans ast =
         ReplaceWith (mutAstChildren indexedMutator ast)
 
 
+insertVarName : Path -> String -> AST -> Maybe ( Path, AST )
+insertVarName path name ast =
+    case ( path, ast ) of
+        ( statIndex :: _, Block b ) ->
+            Just
+                ( [ statIndex - 1 ]
+                , Block
+                    { b
+                        | assignments =
+                            flatMap
+                                (\i stat ->
+                                    if i == statIndex then
+                                        [ { name = name, expression = Incomplete }, stat ]
+
+                                    else
+                                        [ stat ]
+                                )
+                                b.assignments
+                    }
+                )
+
+        _ ->
+            Nothing
+
+
+refactorToNewVariable : Path -> String -> AST -> Maybe ( Path, AST )
+refactorToNewVariable path name ast =
+    ast
+        |> commitASTTransformation path (ReplaceWith (Reference { name = name }))
+        |> insertVarName path name
+
+
 mutateTargetChildInner : List Int -> ASTTransformation -> AST -> ASTTransformation
 mutateTargetChildInner path transformer ast =
     case path of

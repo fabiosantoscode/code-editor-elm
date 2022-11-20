@@ -1,4 +1,4 @@
-module Machine.Run exposing (..)
+module Machine.Run exposing (findAllVarNames, findGoodVariables, runPath)
 
 import AST exposing (AST)
 import Browser exposing (UrlRequest(..))
@@ -25,19 +25,19 @@ runPath ast path =
         [] ->
             Err (NoResult path)
 
-        rootIndex :: _ ->
+        _ ->
             AST.getAstNodeByPath path ast
                 |> Result.fromMaybe (InternalPanic path "could not find node")
                 |> Result.andThen
                     (runExpression
-                        (gatherVariables ast rootIndex)
+                        (findGoodVariables ast path)
                         (findAllVarNames ast)
                         path
                     )
 
 
-gatherVariables : AST -> Int -> Dict String Int
-gatherVariables ast until =
+findGoodVariables : AST -> Path -> Dict String Int
+findGoodVariables ast untilPath =
     let
         evaluateIth i assignments vars =
             case assignments of
@@ -50,8 +50,8 @@ gatherVariables ast until =
                         |> Result.withDefault vars
                         |> evaluateIth (i + 1) rest
     in
-    case ast of
-        AST.Block { assignments } ->
+    case ( ast, List.head untilPath ) of
+        ( AST.Block { assignments }, Just until ) ->
             evaluateIth 0 (List.take until assignments) (Dict.fromList [])
 
         _ ->

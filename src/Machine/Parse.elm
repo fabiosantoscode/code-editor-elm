@@ -1,11 +1,12 @@
 module Machine.Parse exposing (..)
 
 import AST exposing (AST(..))
+import Set  exposing (Set)
 
 
 type ParseResult
-    = ParseError String
-    | ParsedNumber Int
+    = ParsedNumber Int
+    | ParsedVariable String
     | Empty
 
 
@@ -21,14 +22,21 @@ tryParseAtom searchString =
                     ParsedNumber n
 
                 Nothing ->
-                    ParseError "Invalid number"
+                    ParsedVariable s
 
 
-tryParseAtomAst : String -> Maybe AST
-tryParseAtomAst string =
+tryParseAtomAst : String -> Set String -> Maybe AST
+tryParseAtomAst string vars =
     case tryParseAtom string of
         ParsedNumber n ->
             Just (Number { value = n })
+
+        ParsedVariable v ->
+            if Set.member v vars then
+                Just (Reference { name = v })
+
+            else
+                Nothing
 
         _ ->
             Nothing
@@ -40,15 +48,8 @@ tryParseAtomToString string =
         ParsedNumber n ->
             Just (String.fromInt n)
 
+        ParsedVariable n ->
+            Just n
+
         _ ->
             Nothing
-
-
-isParseError : ParseResult -> Bool
-isParseError r =
-    case r of
-        ParseError _ ->
-            True
-
-        _ ->
-            False

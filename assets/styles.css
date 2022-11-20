@@ -144,6 +144,20 @@
     margin-top: 0;
 }
 
+.margin-y-0 {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.flex-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.overflow-auto {
+    overflow: auto;
+}
+
 .color-inline-result { color: blue; }
 
 .cursor-pointer { cursor: pointer; }
@@ -159,15 +173,6 @@
 }
 .outline-error {
     outline-color: red; /* support replace + error */
-}
-
-/* Reveal the background color behind two of these, also if it's the last one */
-.reveal-bg-behind + .reveal-bg-behind {
-    margin-left: var(--form-child-padding);
-}
-
-.reveal-bg-behind:last-child {
-    margin-right: var(--form-child-padding);
 }
 
 /* add button */
@@ -244,6 +249,10 @@
     border-radius: 5px;
 }
 
+.ast-form > .ast-form {
+    width: unset;
+}
+
 .ast-form--depth-2 {
     background-color: var(--bg-color-form--depth-2);
 }
@@ -264,23 +273,6 @@
     background-color: var(--bg-color-form--depth-6);
 }
 
-.ast-form > * {
-    padding-top: var(--form-child-vertical-padding);
-    padding-bottom: var(--form-child-vertical-padding);
-}
-
-.ast-form > .ast-form {
-    /* Make sure forms nest properly. They should be visibly contained. */
-    padding-top: 0;
-    padding-bottom: 0;
+.ast-form > * + * {
     margin-top: var(--form-child-vertical-padding);
-    margin-bottom: var(--form-child-vertical-padding);
-}
-
-.ast-form > .ast-form__head {
-    padding-right: 0.1em;
-}
-
-.ast-form > .ast-form__endparen {
-    padding-right: 0.1em;
 }

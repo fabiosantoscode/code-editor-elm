@@ -5,9 +5,9 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Machine.Errors
-import Machine.Parse exposing (tryParseAtomToString)
+import Machine.Parse
 import Machine.Run
-import Machine.StandardLibrary exposing (FunctionDisplayType(..), getFunctionDisplayType)
+import Machine.StandardLibrary exposing (FunctionDisplayType(..))
 import Model exposing (..)
 import RenderSuggestions exposing (renderSuggestions)
 import Utils exposing (..)
@@ -30,6 +30,9 @@ renderEditor model ctx ast =
 
         astResult =
             case resultHere of
+                Err (Machine.Errors.NoResult _) ->
+                    span [ class "color-ref-nothing" ] [ text "no data" ]
+
                 Err e ->
                     span [ style "color" "red" ] [ text (Machine.Errors.formatError e) ]
 
@@ -41,21 +44,24 @@ renderEditor model ctx ast =
             [ replaceableLeafNode ctx className (String.fromInt value) ]
 
         Reference { name } ->
-            case ( resultHere, renderNodeExpanded ctx ast ) of
-                ( Err (Machine.Errors.NoResult _), True ) ->
-                    [ replaceableLeafNode ctx (className ++ " color-ref-nothing font-italic") name ]
+            if renderNodeExpanded ctx ast then
+                case resultHere of
+                    Err (Machine.Errors.NoResult _) ->
+                        [ replaceableLeafNode ctx (className ++ " color-ref-nothing font-italic") name ]
 
-                ( Err _, True ) ->
-                    [ replaceableLeafNode ctx (className ++ " color-indirect-error") name ]
+                    Err _ ->
+                        [ replaceableLeafNode ctx (className ++ " color-indirect-error") name ]
 
-                ( Err _, False ) ->
-                    [ replaceButton ctx.path "color-ref-nothing font-italic" (text "no data") ]
+                    Ok _ ->
+                        [ replaceableLeafNode ctx className name ]
 
-                ( Ok val, False ) ->
-                    [ replaceButton ctx.path "color-inline-result cursor-pointer" (text (String.fromInt val)) ]
+            else
+                case resultHere of
+                    Err _ ->
+                        [ replaceButton ctx.path "color-ref-nothing font-italic" (text "no data") ]
 
-                ( Ok _, True ) ->
-                    [ replaceableLeafNode ctx className name ]
+                    Ok val ->
+                        [ replaceButton ctx.path "color-inline-result cursor-pointer" (text (String.fromInt val)) ]
 
         Incomplete ->
             [ replaceableLeafNode ctx className "" ]
@@ -127,7 +133,7 @@ classListFor ast =
             [ "ast-program", "layout-vertical" ]
 
         Form _ ->
-            [ "ast-form", "reveal-bg-behind" ]
+            [ "ast-form" ]
 
         Number _ ->
             [ "ast-number" ]
@@ -136,7 +142,7 @@ classListFor ast =
             [ "ast-reference" ]
 
         Incomplete ->
-            [ "ast-incomplete", "reveal-bg-behind", "min-width-1ch", "min-height-1em" ]
+            [ "ast-incomplete", "min-width-1ch", "min-height-1em" ]
 
 
 renderBlock : Model -> IterationContext -> RBlock -> List (Html Msg)
@@ -221,9 +227,9 @@ nodeReplacementPreview : String -> Replacement -> Html Msg
 nodeReplacementPreview className replacement =
     let
         ( validityClassName, textualPreview ) =
-            tryParseAtomToString replacement.search
+            Machine.Parse.tryParseAtomToString replacement.search
                 |> Maybe.map (\ss -> ( "ast-color-valid-replacement", ss ))
-                |> Maybe.withDefault ( "ast-color-invalid-replacement", "" )
+                |> Maybe.withDefault ( "ast-color-invalid-replacement", "no" )
     in
     button
         [ class "ast-input margin-y-form-child"

@@ -36,7 +36,7 @@ formatError err =
             "FATAL ERROR " ++ panic
 
         NoResult _ ->
-            ""
+            "no data"
 
 
 isNoResult : RunError -> Bool

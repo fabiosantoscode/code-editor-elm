@@ -3,6 +3,7 @@ module Model exposing (..)
 import AST exposing (..)
 import Browser.Dom
 import Machine.Parse exposing (tryParseAtomAst)
+import Machine.Run
 import Task
 
 
@@ -20,9 +21,9 @@ initialModel =
                 [ { name = "addedNumbers"
                   , expression =
                         Form
-                            { head = "+"
+                            { head = "÷"
                             , tail =
-                                [ Number { value = 40 }, Number { value = 2 } ]
+                                [ Number { value = 40 }, Number { value = 0 } ]
                             }
                   }
                 , { name = "variable2"
@@ -58,6 +59,7 @@ type Msg
     = AddExpression Path
     | InitiateReplace Path
     | UpdateSearch String
+    | ReplaceWithNewVariable Path String
     | CommitChange AST
     | Focus (Result Browser.Dom.Error ())
     | Noop
@@ -84,6 +86,19 @@ updateModel msg model =
               }
             , focusPathCmd path
             )
+
+        ReplaceWithNewVariable path name ->
+            case refactorToNewVariable path name model.program of
+                Just ( newStatPath, newProgram ) ->
+                    ( { model
+                        | program = newProgram
+                        , replacing = makeReplacement newStatPath ""
+                      }
+                    , focusPathCmd newStatPath
+                    )
+
+                Nothing ->
+                    Debug.todo "invalid path or toplevel block"
 
         InitiateReplace path ->
             setReplacement model path
@@ -123,7 +138,11 @@ setReplacement model newPath =
         newProgram =
             case model.replacing of
                 Just { search, path } ->
-                    case ( path /= newPath, tryParseAtomAst search ) of
+                    case
+                        ( path /= newPath
+                        , tryParseAtomAst search (Machine.Run.findAllVarNames model.program)
+                        )
+                    of
                         ( True, Just ast ) ->
                             applyAstMutation model ast
 
