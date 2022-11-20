@@ -1,12 +1,17 @@
 module Machine.Errors exposing (..)
 
 
+type alias Path =
+    List Int
+
+
 type RunError
-    = MissingFunc String
-    | MissingVar String
-    | IncorrectArgCount Int Int
-    | InternalPanic String
-    | NoResult
+    = MissingFunc Path String
+    | MissingVar Path String
+    | IncorrectArgCount Path Int Int
+    | InternalPanic Path String
+    | DivisionByZero Path
+    | NoResult Path
 
 
 type alias MachineResult =
@@ -16,17 +21,51 @@ type alias MachineResult =
 formatError : RunError -> String
 formatError err =
     case err of
-        MissingFunc fname ->
+        MissingFunc _ fname ->
             "Missing function " ++ fname
 
-        MissingVar varname ->
+        MissingVar _ varname ->
             "Missing variable " ++ varname
 
-        IncorrectArgCount actual expected ->
+        IncorrectArgCount _ actual expected ->
             "Expected " ++ String.fromInt expected ++ " parameters, but received " ++ String.fromInt actual
 
-        InternalPanic panic ->
+        DivisionByZero _ -> "Division by zero"
+
+        InternalPanic _ panic ->
             "FATAL ERROR " ++ panic
 
-        NoResult ->
+        NoResult _ ->
             ""
+
+
+isNoResult : RunError -> Bool
+isNoResult err =
+    case err of
+        NoResult _ ->
+            True
+
+        _ ->
+            False
+
+
+getErrorPath : RunError -> Path
+getErrorPath err =
+    case err of
+        MissingFunc path _ ->
+            path
+
+        MissingVar path _ ->
+            path
+
+        IncorrectArgCount path _ _ ->
+            path
+
+        DivisionByZero path ->
+            path
+
+        InternalPanic path _ ->
+            path
+
+        NoResult path ->
+            path

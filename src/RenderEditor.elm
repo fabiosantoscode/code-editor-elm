@@ -3,7 +3,7 @@ module RenderEditor exposing (renderEditor)
 import AST exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onClick)
+import Html.Events exposing (..)
 import Machine.Errors
 import Machine.Parse exposing (tryParseAtomToString)
 import Machine.Run
@@ -25,44 +25,6 @@ renderEditor model ctx ast =
                 ++ beingReplacedClasses ctx
                 |> String.join " "
 
-        renderedHtml =
-            case ast of
-                Number { value } ->
-                    [ replaceableLeafNode ctx className (String.fromInt value) ]
-
-                Reference { name } ->
-                    [ replaceableLeafNode ctx className name ]
-
-                Incomplete ->
-                    [ replaceableLeafNode ctx className "" ]
-
-                Block p ->
-                    [ div [ class className ] (renderBlock model ctx p) ]
-
-                Form f ->
-                    let
-                        childRender index child =
-                            renderEditor model (ctxEnterPath ctx index) child
-                    in
-                    [ replaceableNode ctx
-                        (div
-                            [ class className
-                            , class ("ast-form--depth-" ++ String.fromInt (List.length ctx.path))
-                            , class
-                                (if renderFormHorizontally ast then
-                                    "layout-horizontal"
-
-                                 else
-                                    "layout-vertical padding-y padding-x-2"
-                                )
-                            ]
-                            (renderForm ctx.path
-                                f
-                                childRender
-                            )
-                        )
-                    ]
-
         resultHere =
             Machine.Run.runPath model.program ctx.path
 
@@ -75,35 +37,97 @@ renderEditor model ctx ast =
                     text (String.fromInt r)
     in
     case ast of
-        Block _ ->
-            renderedHtml
+        Number { value } ->
+            [ replaceableLeafNode ctx className (String.fromInt value) ]
 
-        Number _ ->
-            renderedHtml
+        Reference { name } ->
+            case ( resultHere, renderNodeExpanded ctx ast ) of
+                ( Err (Machine.Errors.NoResult _), True ) ->
+                    [ replaceableLeafNode ctx (className ++ " color-ref-nothing font-italic") name ]
+
+                ( Err _, True ) ->
+                    [ replaceableLeafNode ctx (className ++ " color-indirect-error") name ]
+
+                ( Err _, False ) ->
+                    [ replaceButton ctx.path "color-ref-nothing font-italic" (text "no data") ]
+
+                ( Ok val, False ) ->
+                    [ replaceButton ctx.path "color-inline-result cursor-pointer" (text (String.fromInt val)) ]
+
+                ( Ok _, True ) ->
+                    [ replaceableLeafNode ctx className name ]
 
         Incomplete ->
-            renderedHtml
+            [ replaceableLeafNode ctx className "" ]
 
-        _ ->
-            case ( resultHere, ctx.path ) of
-                ( Err Machine.Errors.NoResult, _ ) ->
-                    -- Only show errors in the statement level (don't worry they bubble up)
-                    if renderResultInstead ctx ast then
-                        [ replaceButton ctx.path "color-inline-result cursor-pointer" (text "n/a") ]
+        Block p ->
+            [ div [ class className ] (renderBlock model ctx p) ]
 
-                    else
-                        renderedHtml
+        Form f ->
+            if not (renderNodeExpanded ctx ast) then
+                case resultHere of
+                    Err _ ->
+                        [ replaceButton ctx.path "color-indirect-error" astResult ]
 
-                ( Err _, [ _ ] ) ->
-                    -- Only show errors in the statement level (don't worry they bubble up)
-                    renderedHtml ++ [ astResult ]
-
-                _ ->
-                    if renderResultInstead ctx ast then
+                    _ ->
                         [ replaceButton ctx.path "color-inline-result cursor-pointer" astResult ]
 
-                    else
-                        renderedHtml
+            else
+                let
+                    errorOriginatedHere =
+                        case resultHere of
+                            Err (Machine.Errors.NoResult _) ->
+                                False
+
+                            Err e ->
+                                ctx.path == Machine.Errors.getErrorPath e
+
+                            _ ->
+                                False
+
+                    childRender index child =
+                        renderEditor model (ctxEnterPath ctx index) child
+                in
+                replaceableNode ctx
+                    (div
+                        [ class className
+                        , class ("ast-form--depth-" ++ String.fromInt (List.length ctx.path))
+                        , classList
+                            [ ( "outline-error", errorOriginatedHere )
+                            , ( "layout-horizontal", renderFormHorizontally ast )
+                            , ( "layout-vertical padding-y padding-x", not (renderFormHorizontally ast) )
+                            ]
+                        ]
+                        (renderForm ctx.path
+                            f
+                            childRender
+                        )
+                    )
+                    :: (if errorOriginatedHere then
+                            [ div [ class "font-size-sm margin-top-0 padding-l" ] [ astResult ] ]
+
+                        else
+                            []
+                       )
+
+
+renderFormHorizontally : AST -> Bool
+renderFormHorizontally form =
+    getDepth form < 3
+
+
+renderNodeExpanded : IterationContext -> AST -> Bool
+renderNodeExpanded ctx node =
+    if containsIncompleteNode node then
+        True
+
+    else
+        case ctx.replacing of
+            Just { path } ->
+                pathStartsWith path ctx.path
+
+            _ ->
+                False
 
 
 classListFor : AST -> List String
@@ -148,25 +172,6 @@ renderBlock model ctx { assignments } =
     in
     addWidget 0
         ++ List.indexedMap renderWithVarName assignments
-
-
-renderFormHorizontally : AST -> Bool
-renderFormHorizontally form =
-    getDepth form < 3
-
-
-renderResultInstead : IterationContext -> AST -> Bool
-renderResultInstead ctx node =
-    if containsIncompleteNode node then
-        False
-
-    else
-        case ctx.replacing of
-            Just { path } ->
-                not (pathStartsWith path ctx.path)
-
-            _ ->
-                True
 
 
 renderForm : Path -> RForm -> (Int -> AST -> List (Html Msg)) -> List (Html Msg)
@@ -233,12 +238,12 @@ replaceableLeafNode ctx className contents =
             nodeReplacementPreview className r
 
         Nothing ->
-            autoWidthButton
+            button
                 [ class "ast-input margin-y-form-child"
                 , class className
                 , onClick (InitiateReplace ctx.path)
                 ]
-                contents
+                [ text contents ]
 
 
 nodeReplacementPreview : String -> Replacement -> Html Msg
@@ -249,21 +254,12 @@ nodeReplacementPreview className replacement =
                 |> Maybe.map (\ss -> ( "ast-color-valid-replacement", ss ))
                 |> Maybe.withDefault ( "ast-color-invalid-replacement", "" )
     in
-    autoWidthButton
+    button
         [ class "ast-input margin-y-form-child"
         , class className
         , class validityClassName
         ]
-        textualPreview
-
-
-autoWidthButton : List (Attribute Msg) -> String -> Html Msg
-autoWidthButton attributes string =
-    let
-        w =
-            string |> String.length |> String.fromInt
-    in
-    button (style "width" (w ++ "ch") :: attributes) [ text string ]
+        [ text textualPreview ]
 
 
 addStatementButton : IterationContext -> Bool -> Html Msg

@@ -6,7 +6,6 @@
     border-radius: 0.25rem;
     padding: 1rem;
     margin-bottom: 1rem;
-    font-family: monospace;
     font-size: 2rem;
     line-height: 1;
 
@@ -34,6 +33,29 @@
     --form-child-padding: 0.4rem;
     --form-child-vertical-padding: 0.15rem;
 }
+
+/* horizontal and vertical flex layout */
+
+.layout-horizontal {
+    display: inline-flex;
+    align-items: stretch;
+}
+
+.layout-horizontal > :not(.layout-horizontal) {
+    padding-left: var(--form-child-padding);
+    padding-right: var(--form-child-padding);
+}
+
+.layout-vertical {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.layout-vertical > * + * {
+    margin-top: 0;
+}
+
 
 /* atomic */
 
@@ -71,8 +93,28 @@
     margin-bottom: var(--form-child-vertical-padding);
 }
 
+.font-size-sm {
+    font-size: 1.3rem;
+}
+
 .color-var-name {
     color: var(--color-var-name);
+}
+
+.color-error {
+    color: red;
+}
+
+.color-indirect-error {
+    color: rgb(211, 85, 85);
+}
+
+.font-italic {
+    font-style: italic;
+}
+
+.color-ref-nothing {
+    color: gray;
 }
 
 .color-primitive {
@@ -82,6 +124,10 @@
 .padding-x {
     padding-left: var(--form-child-padding);
     padding-right: var(--form-child-padding);
+}
+
+.padding-l {
+    padding-left: var(--form-child-padding);
 }
 
 .padding-x-2 {
@@ -94,6 +140,10 @@
     padding-bottom: var(--form-child-padding);
 }
 
+.margin-top-0 {
+    margin-top: 0;
+}
+
 .color-inline-result { color: blue; }
 
 .cursor-pointer { cursor: pointer; }
@@ -101,28 +151,14 @@
 .min-width-1ch { min-width: 1ch; }
 .min-height-1em { min-height: 1em; }
 
+.outline-error {
+    outline: 2px dotted red;
+}
 .outline-replace {
     outline: 4px solid var(--color-replace);
 }
-
-.layout-horizontal {
-    display: inline-flex;
-    align-items: stretch;
-}
-
-.layout-horizontal > :not(.layout-horizontal) {
-    padding-left: var(--form-child-padding);
-    padding-right: var(--form-child-padding);
-}
-
-.layout-vertical {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-}
-
-.layout-vertical > * + * {
-    margin-top: 0;
+.outline-error {
+    outline-color: red; /* support replace + error */
 }
 
 /* Reveal the background color behind two of these, also if it's the last one */

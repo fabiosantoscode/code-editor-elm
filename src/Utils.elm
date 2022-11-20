@@ -23,6 +23,16 @@ list2ToTuple list =
             Nothing
 
 
+maybe2List : Maybe a -> List a
+maybe2List val =
+    case val of
+        Just x ->
+            [ x ]
+
+        Nothing ->
+            []
+
+
 bool2Int : Bool -> Int
 bool2Int b =
     if b then

@@ -78,7 +78,11 @@ updateModel msg model =
             noCmd model
 
         AddExpression path ->
-            noCmd { model | program = commitASTTransformation path (Insert AST.Incomplete) model.program }
+            noCmd
+                { model
+                    | program = commitASTTransformation path (Insert AST.Incomplete) model.program
+                    , replacing = makeReplacement path ""
+                }
 
         InitiateReplace path ->
             setReplacement model path
